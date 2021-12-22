@@ -6,8 +6,8 @@
 
 Experimental NFS v4 server library in pure go.
 
-The motive I started this project is mainly I need to immigrate a few projects to k8s and there are no other storage services except a COS(like aws s3). So I need something to join a COS
-and a k8s PV together. To me NFS is a interesting choice.
+The motive I started this project is mainly I need to immigrate a few projects to k8s and there are no other storage services except an OSS(like aws s3). So I need something to join OSS
+and k8s PV together. To me NFS is a interesting choice.
 
 Currently this repo doesn't include any COS wrapper in it.
 
@@ -91,4 +91,5 @@ Recent testing results of [nfstest_posix](https://wiki.linux-nfs.org/wiki/index.
 
 ## Contributing
 
-Firing an issue if anything. 
+Firing an issue if anything. Any advice is appreciated.
+
