@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	localAddr  = ":29671"
-	remoteAddr = "10.189.28.93:29671"
+	localAddr  = ":32307"
+	remoteAddr = "127.0.0.1:32307"
 )
 
 type nfsReqHead struct {
