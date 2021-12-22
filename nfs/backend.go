@@ -1,7 +1,7 @@
 package nfs
 
 import (
-	"libnfs-go/fs"
+	"github.com/smallfz/libnfs-go/fs"
 	"net"
 )
 

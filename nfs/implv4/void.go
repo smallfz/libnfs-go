@@ -1,8 +1,8 @@
 package implv4
 
 import (
-	// "libnfs-go/log"
-	"libnfs-go/nfs"
+	// "github.com/smallfz/libnfs-go/log"
+	"github.com/smallfz/libnfs-go/nfs"
 )
 
 func Void(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {

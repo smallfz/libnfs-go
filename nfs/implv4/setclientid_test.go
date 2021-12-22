@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"libnfs-go/nfs"
-	"libnfs-go/xdr"
+	"github.com/smallfz/libnfs-go/nfs"
+	"github.com/smallfz/libnfs-go/xdr"
 	"testing"
 )
 

@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"libnfs-go/log"
-	"libnfs-go/memfs"
-	"libnfs-go/server"
+	"github.com/smallfz/libnfs-go/log"
+	"github.com/smallfz/libnfs-go/memfs"
+	"github.com/smallfz/libnfs-go/server"
 	"os"
 )
 

@@ -1,8 +1,8 @@
 package memfs
 
 import (
-	"libnfs-go/fs"
-	"libnfs-go/log"
+	"github.com/smallfz/libnfs-go/fs"
+	"github.com/smallfz/libnfs-go/log"
 )
 
 type openedFile struct {

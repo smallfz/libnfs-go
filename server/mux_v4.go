@@ -2,10 +2,10 @@ package server
 
 import (
 	"fmt"
-	"libnfs-go/fs"
-	"libnfs-go/nfs"
-	v4 "libnfs-go/nfs/implv4"
-	"libnfs-go/xdr"
+	"github.com/smallfz/libnfs-go/fs"
+	"github.com/smallfz/libnfs-go/nfs"
+	v4 "github.com/smallfz/libnfs-go/nfs/implv4"
+	"github.com/smallfz/libnfs-go/xdr"
 )
 
 type Muxv4 struct {

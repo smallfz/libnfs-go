@@ -2,8 +2,8 @@ package memfs
 
 import (
 	"bytes"
+	"github.com/smallfz/libnfs-go/fs"
 	"io"
-	"libnfs-go/fs"
 	"sync"
 )
 

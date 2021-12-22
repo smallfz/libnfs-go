@@ -1,7 +1,7 @@
 package implv4
 
 import (
-	"libnfs-go/nfs"
+	"github.com/smallfz/libnfs-go/nfs"
 )
 
 func closeFile(x nfs.RPCContext, args *nfs.CLOSE4args) (*nfs.CLOSE4res, error) {

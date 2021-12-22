@@ -1,8 +1,8 @@
 package memfs
 
 import (
-	"libnfs-go/fs"
-	"libnfs-go/nfs"
+	"github.com/smallfz/libnfs-go/fs"
+	"github.com/smallfz/libnfs-go/nfs"
 )
 
 type backendSession struct {

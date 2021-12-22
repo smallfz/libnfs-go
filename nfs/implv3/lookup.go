@@ -3,9 +3,9 @@ package implv3
 import (
 	"bytes"
 	"fmt"
-	fstools "libnfs-go/fs"
-	"libnfs-go/log"
-	"libnfs-go/nfs"
+	fstools "github.com/smallfz/libnfs-go/fs"
+	"github.com/smallfz/libnfs-go/log"
+	"github.com/smallfz/libnfs-go/nfs"
 	"time"
 )
 

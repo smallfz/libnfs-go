@@ -3,9 +3,9 @@ package memfs
 import (
 	"bytes"
 	"fmt"
+	"github.com/smallfz/libnfs-go/fs"
 	"io"
 	"io/ioutil"
-	"libnfs-go/fs"
 	"os"
 	"testing"
 )

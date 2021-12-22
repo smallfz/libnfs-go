@@ -1,7 +1,7 @@
 package implv4
 
 import (
-	"libnfs-go/nfs"
+	"github.com/smallfz/libnfs-go/nfs"
 )
 
 func setClientIdConfirm(args *nfs.SETCLIENTID_CONFIRM4args) (*nfs.SETCLIENTID_CONFIRM4res, error) {

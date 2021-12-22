@@ -3,7 +3,7 @@ package implv3
 import (
 	"crypto/md5"
 	"encoding/binary"
-	"libnfs-go/nfs"
+	"github.com/smallfz/libnfs-go/nfs"
 	"os"
 	"path"
 	"time"

@@ -1,12 +1,12 @@
 package server
 
 import (
-	// "libnfs-go/log"
+	// "github.com/smallfz/libnfs-go/log"
 	"fmt"
-	"libnfs-go/fs"
-	"libnfs-go/nfs"
-	handlers "libnfs-go/nfs/implv3"
-	"libnfs-go/xdr"
+	"github.com/smallfz/libnfs-go/fs"
+	"github.com/smallfz/libnfs-go/nfs"
+	handlers "github.com/smallfz/libnfs-go/nfs/implv3"
+	"github.com/smallfz/libnfs-go/xdr"
 )
 
 type Mux struct {

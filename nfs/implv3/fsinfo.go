@@ -2,8 +2,8 @@ package implv3
 
 import (
 	// "fmt"
-	"libnfs-go/log"
-	"libnfs-go/nfs"
+	"github.com/smallfz/libnfs-go/log"
+	"github.com/smallfz/libnfs-go/nfs"
 	"time"
 	// "github.com/davecgh/go-xdr/xdr2"
 )

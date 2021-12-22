@@ -2,10 +2,10 @@ package implv4
 
 import (
 	"bytes"
-	"libnfs-go/fs"
-	"libnfs-go/log"
-	"libnfs-go/nfs"
-	"libnfs-go/xdr"
+	"github.com/smallfz/libnfs-go/fs"
+	"github.com/smallfz/libnfs-go/log"
+	"github.com/smallfz/libnfs-go/nfs"
+	"github.com/smallfz/libnfs-go/xdr"
 	// "path"
 )
 

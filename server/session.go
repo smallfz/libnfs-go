@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/smallfz/libnfs-go/log"
+	"github.com/smallfz/libnfs-go/nfs"
+	"github.com/smallfz/libnfs-go/xdr"
 	"io"
-	"libnfs-go/log"
-	"libnfs-go/nfs"
-	"libnfs-go/xdr"
 	"net"
 )
 

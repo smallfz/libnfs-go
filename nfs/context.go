@@ -1,8 +1,8 @@
 package nfs
 
 import (
-	"libnfs-go/fs"
-	"libnfs-go/xdr"
+	"github.com/smallfz/libnfs-go/fs"
+	"github.com/smallfz/libnfs-go/xdr"
 )
 
 type RPCContext interface {
