@@ -2,11 +2,71 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/smallfz/libnfs-go.svg)](https://pkg.go.dev/github.com/smallfz/libnfs-go)
 
 
-# NFS server library
+# NFS Server Library
 
-Experimental NFS server library in pure go.
+Experimental NFS v4 server library in pure go.
 
-NFSv4 implementation posix tests:
+The motive I started this project is mainly I need to immigrate a few projects to k8s and there are no other storage services except a COS(like aws s3). So I need something to join a COS
+and a k8s PV together. To me NFS is a interesting choice.
+
+Currently this repo doesn't include any COS wrapper in it.
+
+## Getting start
+
+To give it a try:
+
+	package main
+	
+	import (
+		"fmt"
+		"github.com/smallfz/libnfs-go/memfs"
+		"github.com/smallfz/libnfs-go/server"
+		"os"
+	)
+	
+	func main() {
+		port := 2049
+	
+		mfs := memfs.NewMemFS()
+		backend := memfs.NewBackend(mfs)
+	
+		mfs.MkdirAll("/test", os.FileMode(0755))
+		mfs.MkdirAll("/test2", os.FileMode(0755))
+		mfs.MkdirAll("/many", os.FileMode(0755))
+	
+		perm := os.FileMode(0755)
+		for i := 0; i < 256; i++ {
+			mfs.MkdirAll(fmt.Sprintf("/many/sub-%d", i+1), perm)
+		}
+		
+		// TODO: replace the in-memory backend with your own implementation.
+		// ....
+	
+		svr, err := server.NewServerTCP(port, backend)
+		if err != nil {
+			fmt.Printf("server.NewServerTCP: %v"\n, err)
+			return
+		}
+	
+		if err := svr.Serve(); err != nil {
+			fmt.Printf("svr.Serve: %v\n", err)
+		}
+	}
+
+After the server started you can mount the in-memory filesystem to local:
+
+on Mac:
+    
+    mount -o nfsvers=4,noacl,tcp -t nfs localhost:/ /Users/smallfz/mnt
+
+on Linux:
+
+    mount -o nfsvers=4,minorversion=0,noacl,tcp -t nfs localhost:/ /mnt
+
+
+## Status
+
+Recent testing results of [nfstest_posix](https://wiki.linux-nfs.org/wiki/index.php/NFStest):
 
  - access: 58/58 pass
  - open: 19/22 pass
@@ -27,9 +87,8 @@ NFSv4 implementation posix tests:
  - rmdir: 3/5 pass
  - link: x
  - fcntl: x
+ - ...
 
+## Contributing
 
-Example:
-
-see [bin/server/main.go](bin/server/main.go).
-
+Firing an issue if anything. 
