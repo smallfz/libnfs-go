@@ -1,6 +1,6 @@
-// NFS server implements nfs v4.0
+// NFS server implements nfs v4.0.
 //
-// Package server privodes a server implementation of nfs v4.
+// Package server provides a server implementation of nfs v4.
 //
 //     import (
 //     	"fmt"
