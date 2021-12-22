@@ -3,7 +3,8 @@
 
 Experimental NFS server library in pure go.
 
-- NFSv4 implementation posix tests
+NFSv4 implementation posix tests:
+
  - access: 58/58 pass
  - open: 19/22 pass
  - chdir: 3/3 pass
