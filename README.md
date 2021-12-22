@@ -1,4 +1,7 @@
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/smallfz/libnfs-go.svg)](https://pkg.go.dev/github.com/smallfz/libnfs-go)
+
+
 # NFS server library
 
 Experimental NFS server library in pure go.
