@@ -3,6 +3,7 @@ package xdr
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/smallfz/libnfs-go/log"
 	"io"
 	"math"
 	"reflect"
@@ -17,7 +18,12 @@ func NewWriter(w io.Writer) *Writer {
 }
 
 func (w *Writer) Write(data []byte) (int, error) {
-	return w.base.Write(data)
+	if i, err := w.base.Write(data); err != nil {
+		log.Errorf("w.base.Write: %v", err)
+		return i, err
+	} else {
+		return i, nil
+	}
 }
 
 func (w *Writer) WriteAny(any interface{}) (int, error) {
@@ -58,6 +64,10 @@ func (w *Writer) WriteValue(v reflect.Value) (int, error) {
 			vmid := v.Convert(vTo.Elem().Type())
 			vTo.Elem().Set(vmid)
 		} else {
+			log.Errorf(
+				"unable to assign %s to %s.",
+				vtyp.Name(), vTo.Type().Name(),
+			)
 			return 0, fmt.Errorf(
 				"unable to assign %s to %s.",
 				vtyp.Name(), vTo.Type().Name(),
@@ -74,6 +84,10 @@ func (w *Writer) WriteValue(v reflect.Value) (int, error) {
 			vmid := v.Convert(vTo.Type())
 			vTo.Elem().Set(vmid)
 		} else {
+			log.Errorf(
+				"unable to assign %s to %s.",
+				vtyp.Name(), vTo.Type().Name(),
+			)
 			return 0, fmt.Errorf(
 				"unable to assign %s to %s.",
 				vtyp.Name(), vTo.Type().Name(),
@@ -81,7 +95,7 @@ func (w *Writer) WriteValue(v reflect.Value) (int, error) {
 		}
 		buff := make([]byte, 8)
 		binary.BigEndian.PutUint64(buff, i64)
-		return w.base.Write(buff)
+		return w.Write(buff)
 
 	case reflect.Float32:
 		i := math.Float32bits(float32(v.Float()))
@@ -91,7 +105,7 @@ func (w *Writer) WriteValue(v reflect.Value) (int, error) {
 		i64 := math.Float64bits(v.Float())
 		buff := make([]byte, 8)
 		binary.BigEndian.PutUint64(buff, i64)
-		return w.base.Write(buff)
+		return w.Write(buff)
 
 	case reflect.Array:
 		vElTyp := vtyp.Elem()
@@ -197,7 +211,7 @@ func (w *Writer) WriteValue(v reflect.Value) (int, error) {
 
 func (w *Writer) WriteBytesAutoPad(dat []byte) (int, error) {
 	size := 0
-	if s, err := w.base.Write(dat); err != nil {
+	if s, err := w.Write(dat); err != nil {
 		return size, err
 	} else {
 		size += s
@@ -205,7 +219,7 @@ func (w *Writer) WriteBytesAutoPad(dat []byte) (int, error) {
 	padLen := Pad(len(dat))
 	if padLen > 0 {
 		pad := make([]byte, padLen)
-		if s, err := w.base.Write(pad); err != nil {
+		if s, err := w.Write(pad); err != nil {
 			return size, err
 		} else {
 			size += s
@@ -217,7 +231,7 @@ func (w *Writer) WriteBytesAutoPad(dat []byte) (int, error) {
 func (w *Writer) WriteUint32(v uint32) (int, error) {
 	buff := make([]byte, 4)
 	binary.BigEndian.PutUint32(buff, v)
-	return w.base.Write(buff)
+	return w.Write(buff)
 }
 
 func (w *Writer) Flush() error {

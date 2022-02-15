@@ -24,6 +24,11 @@ type File interface {
 	Readdir(int) ([]FileInfo, error)
 }
 
+type WithId interface {
+	Id() uint64
+}
+
+// FS is the most essential interface that need to be implemeted in a derived nfs server.
 type FS interface {
 	Open(string) (File, error)
 	OpenFile(string, int, os.FileMode) (File, error)
@@ -32,8 +37,23 @@ type FS interface {
 	Rename(string, string) error
 	Remove(string) error
 	MkdirAll(string, os.FileMode) error
-	GetHandle(string) ([]byte, error)
-	GetFileId(string) uint64
+
+	// GetFileId returns an unique id of the file in implementing.
+	GetFileId(FileInfo) uint64
+
+	// GetRootHandle returns the handle of the root node.
+	GetRootHandle() []byte
+
+	// GetHandle returns the handle of the specified file.
+	GetHandle(FileInfo) ([]byte, error)
+
+	// ResolveHandle translate the giving handle to full path of the corresponding file.
+	ResolveHandle([]byte) (string, error)
+}
+
+type FSWithId interface {
+	FS
+	WithId
 }
 
 type AllowLink interface {

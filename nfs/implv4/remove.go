@@ -12,9 +12,16 @@ func remove(x nfs.RPCContext, args *nfs.REMOVE4args) (*nfs.REMOVE4res, error) {
 	stat := x.Stat()
 	vfs := x.GetFS()
 
-	pathName := path.Join(stat.Cwd(), args.Target)
+	fh := stat.CurrentHandle()
+	folder, err := vfs.ResolveHandle(fh)
+	if err != nil {
+		log.Warnf("ResolveHandle: %v", err)
+		return &nfs.REMOVE4res{Status: nfs.NFS4ERR_PERM}, nil
+	}
 
-	_, err := vfs.Stat(pathName)
+	pathName := path.Join(folder, args.Target)
+
+	_, err = vfs.Stat(pathName)
 	if err != nil {
 		log.Warnf("  remove: vfs.Stat(%s): %v", pathName, err)
 	}

@@ -12,11 +12,14 @@ type SessionState interface {
 }
 
 type StatService interface {
-	Cwd() string
-	SetCwd(string) error
+	// Cwd() string
+	// SetCwd(string) error
 
-	PushHandle(string)
-	PopHandle() (string, bool)
+	SetCurrentHandle(FileHandle4)
+	CurrentHandle() FileHandle4
+
+	PushHandle(FileHandle4)
+	PopHandle() (FileHandle4, bool)
 
 	SetClientId(uint64)
 	ClientId() (uint64, bool)

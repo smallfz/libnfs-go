@@ -6,6 +6,7 @@ import (
 )
 
 type fileInfo struct {
+	id       uint64
 	name     string
 	perm     os.FileMode
 	size     int64

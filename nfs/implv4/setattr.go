@@ -29,8 +29,14 @@ func setAttr(x nfs.RPCContext, args *nfs.SETATTR4args) (*nfs.SETATTR4res, error)
 		}
 	}
 
-	cwd := x.Stat().Cwd()
+	// cwd := x.Stat().Cwd()
 	vfs := x.GetFS()
+	fh := x.Stat().CurrentHandle()
+	pathName, err := vfs.ResolveHandle(fh)
+	if err != nil {
+		log.Warnf("ResolveHandle: %v", err)
+		return resFailPerm, nil
+	}
 
 	seqId := uint32(0)
 	if args.StateId != nil {
@@ -38,7 +44,7 @@ func setAttr(x nfs.RPCContext, args *nfs.SETATTR4args) (*nfs.SETATTR4res, error)
 	}
 
 	f := (fs.File)(nil)
-	pathName := cwd
+	// pathName := cwd
 
 	of := x.Stat().GetOpenedFile(seqId)
 
@@ -94,7 +100,7 @@ func setAttr(x nfs.RPCContext, args *nfs.SETATTR4args) (*nfs.SETATTR4res, error)
 		return resFailPerm, nil
 	}
 
-	attrs := fileInfoToAttrs(vfs, cwd, fi, idxReq)
+	attrs := fileInfoToAttrs(vfs, pathName, fi, idxReq)
 	attrSet := attrs.Mask
 
 	return &nfs.SETATTR4res{

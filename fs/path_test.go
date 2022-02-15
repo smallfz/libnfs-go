@@ -27,3 +27,24 @@ func TestAbs(t *testing.T) {
 		}
 	}
 }
+
+func TestPathJoin(t *testing.T) {
+	grantedCases := [][]string{
+		[]string{"", "/", "/"},
+		[]string{"abc", "/def", "/abc/def"},
+		[]string{"/abc", "/def", "/abc/def"},
+		[]string{"/abc", "def", "/abc/def"},
+		[]string{"/abc", "def", "/ijk", "/abc/def/ijk"},
+	}
+
+	for _, row := range grantedCases {
+		if len(row) < 3 {
+			continue
+		}
+		output := Abs(Join(row[:len(row)-1]...))
+		expect := row[len(row)-1]
+		if output != expect {
+			t.Fatalf("expects `%s` but get `%s`.", expect, output)
+		}
+	}
+}

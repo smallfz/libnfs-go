@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	// "github.com/smallfz/libnfs-go/log"
+	// "libnfs-go/log"
 	"math"
 	"reflect"
 )

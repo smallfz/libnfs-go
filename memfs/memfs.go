@@ -3,21 +3,22 @@ package memfs
 
 import (
 	"bytes"
-	// "crypto/md5"
-	// "encoding/binary"
+	"encoding/binary"
 	"github.com/smallfz/libnfs-go/fs"
 	"github.com/smallfz/libnfs-go/log"
 	"io"
-	// "github.com/smallfz/libnfs-go/log"
 	"os"
 	"path"
-	"time"
-	// "strings"
 	"sync"
+	"time"
+)
+
+const (
+	InvalidId = 0xffffffffffffffff
 )
 
 type memFsNode struct {
-	id       int
+	id       uint64
 	name     string
 	isDir    bool
 	nodeId   uint64 // storage data-node id
@@ -39,6 +40,26 @@ func (n *memFsNode) findChild(parts []string) (*memFsNode, bool) {
 				return child, true
 			}
 			return child.findChild(parts[1:])
+		}
+	}
+	return nil, false
+}
+
+func (n *memFsNode) findPath(id uint64) ([]*memFsNode, bool) {
+	if id == InvalidId {
+		return nil, false
+	}
+	if id == n.id {
+		return []*memFsNode{n}, true
+	}
+	if n.children == nil || !n.isDir {
+		return nil, false
+	}
+	for _, child := range n.children {
+		if arr, ok := child.findPath(id); ok {
+			rs := []*memFsNode{n}
+			rs = append(rs, arr...)
+			return rs, true
 		}
 	}
 	return nil, false
@@ -95,7 +116,7 @@ type MemFS struct {
 	store fs.Storage
 	root  *memFsNode
 
-	fileId int
+	fileId uint64
 	lck    *sync.RWMutex
 }
 
@@ -115,7 +136,7 @@ func NewMemFS() *MemFS {
 	}
 }
 
-func (s *MemFS) nextId() int {
+func (s *MemFS) nextId() uint64 {
 	s.lck.Lock()
 	defer s.lck.Unlock()
 
@@ -136,6 +157,7 @@ func (s *MemFS) getFileInfo(n *memFsNode) *fileInfo {
 		nlinks += len(n.children)
 	}
 	return &fileInfo{
+		id:       n.id,
 		name:     path.Base(n.name),
 		perm:     n.perm,
 		size:     n.size,
@@ -396,16 +418,48 @@ func (s *MemFS) MkdirAll(name string, perm os.FileMode) error {
 	return nil
 }
 
-func (s *MemFS) GetHandle(name string) ([]byte, error) {
-	dat := []byte(fs.Abs(name))
-	return dat, nil
+func (s *MemFS) GetFileId(fi fs.FileInfo) uint64 {
+	switch i := fi.(type) {
+	case *fileInfo:
+		return i.id
+	}
+	return InvalidId
 }
 
-func (s *MemFS) GetFileId(name string) uint64 {
-	name = fs.Abs(name)
-	n, found := s.getNode(name)
-	if !found {
-		return 0
+func (s *MemFS) GetHandle(fi fs.FileInfo) ([]byte, error) {
+	id := s.GetFileId(fi)
+	if id == InvalidId {
+		return nil, os.ErrNotExist
 	}
-	return uint64(n.id)
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, id)
+	return buf, nil
+}
+
+func (s *MemFS) GetRootHandle() []byte {
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, s.root.id)
+	return buf
+}
+
+// ResolveHandle resolves a file-handle(eg. nfs_fh4) to a full path name.
+func (s *MemFS) ResolveHandle(fh []byte) (string, error) {
+	var id uint64
+	if len(fh) <= 8 {
+		id = binary.BigEndian.Uint64(fh)
+	} else {
+		id = binary.BigEndian.Uint64(fh[:8])
+	}
+
+	rs, ok := s.root.findPath(id)
+	if !ok {
+		return "", os.ErrNotExist
+	}
+
+	parts := []string{}
+	for _, n := range rs {
+		parts = append(parts, n.name)
+	}
+
+	return fs.Abs(fs.Join(parts...)), nil
 }

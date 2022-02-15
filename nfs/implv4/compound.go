@@ -1,10 +1,10 @@
 package implv4
 
 import (
-	"github.com/smallfz/libnfs-go/fs"
+	"io"
+	// "libnfs-go/fs"
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
-	"io"
 )
 
 func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
@@ -71,7 +71,9 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 		} else {
 			sizeConsumed += size
 		}
+
 		log.Infof("(%d) %s", i, nfs.Proc4Name(opnum4))
+
 		switch opnum4 {
 		case nfs.OP4_SETCLIENTID:
 			args := &nfs.SETCLIENTID4args{}
@@ -134,7 +136,8 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 		case nfs.OP4_PUTROOTFH:
 			// reset cwd to /
 			stat := ctx.Stat()
-			stat.SetCwd("/")
+			// stat.SetCwd("/")
+			stat.SetCurrentHandle(ctx.GetFS().GetRootHandle())
 
 			// log.Infof("  putrootfh(/)")
 
@@ -172,16 +175,24 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 				sizeConsumed += size
 			}
 
-			log.Debugf("    fh = %s", string(args.Fh))
+			log.Debugf("    fh = %x", args.Fh)
 
 			// set current handler to args.Fh
 			stat := ctx.Stat()
-			stat.SetCwd(fs.Abs(string(args.Fh)))
-			// log.Debugf("  cwd set to %s", stat.Cwd())
+			vfs := ctx.GetFS()
 
 			res := &nfs.PUTFH4res{
 				Status: nfs.NFS4_OK,
 			}
+
+			if _, err := vfs.ResolveHandle(args.Fh); err != nil {
+				log.Warnf("vfs.ResolveHandle(%x): %v", args.Fh, err)
+				res.Status = nfs.NFS4ERR_NOENT
+			} else {
+				res.Status = nfs.NFS4_OK
+				stat.SetCurrentHandle(args.Fh)
+			}
+
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
@@ -189,21 +200,31 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 
 		case nfs.OP4_GETFH:
 			stat := ctx.Stat()
-			vfs := ctx.GetFS()
-			res := (*nfs.GETFH4res)(nil)
-			fh, err := vfs.GetHandle(stat.Cwd())
-			if err != nil {
-				res = &nfs.GETFH4res{
-					Status: nfs.NFS4ERR_SERVERFAULT,
-				}
-			} else {
-				res = &nfs.GETFH4res{
-					Status: nfs.NFS4_OK,
-					Ok: &nfs.GETFH4resok{
-						Fh: fh,
-					},
-				}
+			// vfs := ctx.GetFS()
+
+			// res := (*nfs.GETFH4res)(nil)
+			fh := stat.CurrentHandle()
+			res := &nfs.GETFH4res{
+				Status: nfs.NFS4_OK,
+				Ok: &nfs.GETFH4resok{
+					Fh: fh,
+				},
 			}
+
+			// fh, err := vfs.GetHandle(stat.Cwd())
+			// if err != nil {
+			// 	res = &nfs.GETFH4res{
+			// 		Status: nfs.NFS4ERR_SERVERFAULT,
+			// 	}
+			// } else {
+			// 	res = &nfs.GETFH4res{
+			// 		Status: nfs.NFS4_OK,
+			// 		Ok: &nfs.GETFH4resok{
+			// 			Fh: fh,
+			// 		},
+			// 	}
+			// }
+
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
@@ -349,6 +370,24 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsList = append(rsList, res)
 			break
 
+		case nfs.OP4_OPEN_DOWNGRADE:
+			args, size, err := readOpOpenDgArgs(r)
+			if err != nil {
+				return sizeConsumed, err
+			} else {
+				sizeConsumed += size
+			}
+
+			res, err := openDg(ctx, args)
+			if err != nil {
+				return sizeConsumed, err
+			}
+
+			rsOpList = append(rsOpList, opnum4)
+			rsStatusList = append(rsStatusList, res.Status)
+			rsList = append(rsList, res)
+			break
+
 		case nfs.OP4_CLOSE:
 			args := &nfs.CLOSE4args{}
 			if size, err := r.ReadAs(args); err != nil {
@@ -440,7 +479,9 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			break
 
 		case nfs.OP4_SAVEFH:
-			ctx.Stat().PushHandle(ctx.Stat().Cwd())
+			st := ctx.Stat()
+			st.PushHandle(st.CurrentHandle())
+			// ctx.Stat().PushHandle(ctx.Stat().Cwd())
 			res := &nfs.SAVEFH4res{
 				Status: nfs.NFS4_OK,
 			}
@@ -450,10 +491,13 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			break
 
 		case nfs.OP4_RESTOREFH:
-			pathName, ok := ctx.Stat().PopHandle()
+			st := ctx.Stat()
+			fh, ok := st.PopHandle()
 			if ok {
-				ctx.Stat().SetCwd(pathName)
+				// ctx.Stat().SetCwd(pathName)
+				st.SetCurrentHandle(fh)
 			}
+
 			res := &nfs.RESTOREFH4res{
 				Status: nfs.NFS4_OK,
 			}
@@ -487,7 +531,9 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 		case *nfs.ResGenericRaw:
 			w.WriteUint32(res.Status)
 			if res.Reader != nil {
-				io.Copy(w, res.Reader)
+				if _, err := io.Copy(w, res.Reader); err != nil {
+					log.Errorf("Compound(): io.Copy: %v", err)
+				}
 			}
 			break
 

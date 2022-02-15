@@ -1,7 +1,7 @@
 package implv4
 
 import (
-	// "github.com/smallfz/libnfs-go/log"
+	// "libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
 )
 

@@ -193,8 +193,13 @@ func open(x nfs.RPCContext, args *nfs.OPEN4args) (*nfs.ResGenericRaw, error) {
 		raiseWhenExists = false
 	}
 
-	cwd := x.Stat().Cwd()
+	stat := x.Stat()
 	vfs := x.GetFS()
+
+	cwd, err := vfs.ResolveHandle(stat.CurrentHandle())
+	if err != nil {
+		return &nfs.ResGenericRaw{Status: nfs.NFS4ERR_PERM}, nil
+	}
 
 	if di, err := vfs.Stat(cwd); err != nil {
 		return resFail500, nil
@@ -227,6 +232,8 @@ func open(x nfs.RPCContext, args *nfs.OPEN4args) (*nfs.ResGenericRaw, error) {
 		// ok, already exists. nothing to do.
 	}
 
+	var finalFi fs.FileInfo = fi
+
 	attrSet := []uint32{}
 
 	seqId := uint32(0) // RFC7531: stateid4.seqid
@@ -249,6 +256,8 @@ func open(x nfs.RPCContext, args *nfs.OPEN4args) (*nfs.ResGenericRaw, error) {
 			if err != nil {
 				return resFailPerm, nil
 			}
+
+			finalFi = fi
 
 			if args.CreateHow != nil && args.CreateHow.CreateAttrs != nil {
 				idxReq := bitmap4Decode(args.CreateHow.CreateAttrs.Mask)
@@ -273,7 +282,12 @@ func open(x nfs.RPCContext, args *nfs.OPEN4args) (*nfs.ResGenericRaw, error) {
 
 	}
 
-	x.Stat().SetCwd(pathName)
+	if fh, err := vfs.GetHandle(finalFi); err != nil {
+		log.Warnf("vfs.GetHandle: %v", err)
+		return resFailPerm, nil
+	} else {
+		stat.SetCurrentHandle(fh)
+	}
 
 	res := &nfs.OPEN4res{
 		Status: nfs.NFS4_OK,

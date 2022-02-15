@@ -3,6 +3,7 @@ package memfs
 import (
 	"github.com/smallfz/libnfs-go/fs"
 	"github.com/smallfz/libnfs-go/log"
+	"github.com/smallfz/libnfs-go/nfs"
 )
 
 type openedFile struct {
@@ -19,8 +20,9 @@ func (f *openedFile) Path() string {
 }
 
 type Stat struct {
-	cwd         string
-	handleStack []string
+	// cwd         string
+	current     nfs.FileHandle4
+	handleStack []nfs.FileHandle4
 
 	clientId uint64
 
@@ -29,17 +31,28 @@ type Stat struct {
 	seqId uint32
 }
 
-func (t *Stat) Cwd() string {
-	return fs.Abs(t.cwd)
+// func (t *Stat) Cwd() string {
+// 	return fs.Abs(t.cwd)
+// }
+
+// func (t *Stat) SetCwd(p string) error {
+// 	p = fs.Abs(p)
+// 	t.cwd = p
+// 	return nil
+// }
+
+func (t *Stat) SetCurrentHandle(fh nfs.FileHandle4) {
+	t.current = fh
 }
 
-func (t *Stat) SetCwd(p string) error {
-	p = fs.Abs(p)
-	t.cwd = p
-	return nil
+func (t *Stat) CurrentHandle() nfs.FileHandle4 {
+	if t.current == nil {
+		t.current = []byte{}
+	}
+	return t.current
 }
 
-func (t *Stat) PopHandle() (string, bool) {
+func (t *Stat) PopHandle() (nfs.FileHandle4, bool) {
 	if t.handleStack != nil {
 		if len(t.handleStack) > 0 {
 			size := len(t.handleStack)
@@ -48,12 +61,12 @@ func (t *Stat) PopHandle() (string, bool) {
 			return last, true
 		}
 	}
-	return "", false
+	return nil, false
 }
 
-func (t *Stat) PushHandle(item string) {
+func (t *Stat) PushHandle(item nfs.FileHandle4) {
 	if t.handleStack == nil {
-		t.handleStack = []string{}
+		t.handleStack = []nfs.FileHandle4{}
 	}
 	t.handleStack = append(t.handleStack, item)
 }
@@ -107,7 +120,8 @@ func (t *Stat) RemoveOpenedFile(seqId uint32) fs.FileOpenState {
 
 func (t *Stat) CleanUp() {
 	log.Debugf("stat: cleanup()")
-	t.cwd = ""
+	// t.cwd = ""
+	t.current = []byte{}
 	if t.handleStack != nil {
 		t.handleStack = t.handleStack[0:0]
 	}

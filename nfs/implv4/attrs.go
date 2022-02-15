@@ -2,6 +2,7 @@ package implv4
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"github.com/smallfz/libnfs-go/fs"
 	"github.com/smallfz/libnfs-go/log"
@@ -239,6 +240,19 @@ func getAttrsMaxBytesSize(req map[int]bool) uint32 {
 	return total
 }
 
+func newFAttr4(mask []uint32, valsb64 string) *nfs.FAttr4 {
+	a := &nfs.FAttr4{
+		Mask: mask,
+	}
+	if dat, err := base64.StdEncoding.DecodeString(valsb64); err != nil {
+		log.Errorf("base64.DecodeString: %v", err)
+		a.Vals = []byte{}
+	} else {
+		a.Vals = dat
+	}
+	return a
+}
+
 func fileInfoToAttrs(vfs fs.FS, pathName string, fi fs.FileInfo, attrsRequest map[int]bool) *nfs.FAttr4 {
 	idxSupport := map[int]bool{}
 	for _, a := range AttrsSupported {
@@ -361,9 +375,9 @@ func fileInfoToAttrs(vfs fs.FS, pathName string, fi fs.FileInfo, attrsRequest ma
 			writeAny(a, uint32(0), 4)
 			break
 		case A_filehandle:
-			fh, err := vfs.GetHandle(pathName)
+			fh, err := vfs.GetHandle(fi)
 			if err != nil {
-				log.Warnf("vfs.GetHandle(%s): %v", pathName, err)
+				log.Warnf("vfs.GetHandle(%s): %v", fi.Name(), err)
 				if fh == nil {
 					fh = []byte{}
 				}
@@ -371,7 +385,7 @@ func fileInfoToAttrs(vfs fs.FS, pathName string, fi fs.FileInfo, attrsRequest ma
 			writeAny(a, fh, 4+len(fh)+xdr.Pad(len(fh)))
 			break
 		case A_fileid:
-			fileid := vfs.GetFileId(pathName)
+			fileid := vfs.GetFileId(fi)
 			writeAny(a, fileid, 8)
 			break
 		case A_mode:
@@ -422,7 +436,7 @@ func fileInfoToAttrs(vfs fs.FS, pathName string, fi fs.FileInfo, attrsRequest ma
 			writeAny(a, v, 8+4)
 			break
 		case A_mounted_on_fileid:
-			fileid := vfs.GetFileId(pathName)
+			fileid := vfs.GetFileId(fi)
 			writeAny(a, fileid, 8)
 			break
 		case A_suppattr_exclcreat:
@@ -457,7 +471,7 @@ type Attr struct {
 	UniqueHandles     bool
 	LeaseTime         uint32
 	RdattrError       uint32
-	FileHandle        []byte
+	FileHandle        nfs.FileHandle4
 	FileId            uint64
 	Mode              *uint32
 	NumLinks          uint32

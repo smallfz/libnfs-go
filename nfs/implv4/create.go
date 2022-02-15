@@ -74,11 +74,17 @@ func create(x nfs.RPCContext, args *nfs.CREATE4args) (*nfs.CREATE4res, error) {
 		return &nfs.CREATE4res{Status: nfs.NFS4ERR_BADTYPE}, nil
 	}
 
-	cwd := x.Stat().Cwd()
-	vfs := x.GetFS()
-
 	resFailPerm := &nfs.CREATE4res{Status: nfs.NFS4ERR_PERM}
 	resFail500 := &nfs.CREATE4res{Status: nfs.NFS4ERR_SERVERFAULT}
+
+	// cwd := x.Stat().Cwd()
+	vfs := x.GetFS()
+
+	fh := x.Stat().CurrentHandle()
+	cwd, err := vfs.ResolveHandle(fh)
+	if err != nil {
+		return resFailPerm, nil
+	}
 
 	fi, err := vfs.Stat(cwd)
 	if err != nil {
@@ -89,6 +95,7 @@ func create(x nfs.RPCContext, args *nfs.CREATE4args) (*nfs.CREATE4res, error) {
 	}
 
 	pathName := fs.Join(cwd, args.ObjName)
+	log.Debugf("    create: %s", pathName)
 	if _, err := vfs.Stat(pathName); err == nil {
 		return &nfs.CREATE4res{Status: nfs.NFS4ERR_EXIST}, nil
 	}
@@ -124,8 +131,12 @@ func create(x nfs.RPCContext, args *nfs.CREATE4args) (*nfs.CREATE4res, error) {
 			attr := fileInfoToAttrs(vfs, pathName, fi, nil)
 			attrSet = attr.Mask
 
-			// set current fh
-			x.Stat().SetCwd(pathName)
+			// set current fh to the newly created one.
+			if fh, err := vfs.GetHandle(fi); err != nil {
+				return resFailPerm, nil
+			} else {
+				x.Stat().SetCurrentHandle(fh)
+			}
 
 			break
 		}
@@ -152,8 +163,13 @@ func create(x nfs.RPCContext, args *nfs.CREATE4args) (*nfs.CREATE4res, error) {
 				attr := fileInfoToAttrs(vfs, pathName, fi, nil)
 				attrSet = attr.Mask
 
-				// set current fh
-				x.Stat().SetCwd(pathName)
+				// set current fh to the newly created one.
+				if fh, err := vfs.GetHandle(fi); err != nil {
+					return resFailPerm, nil
+				} else {
+					x.Stat().SetCurrentHandle(fh)
+				}
+
 				break
 			}
 		}

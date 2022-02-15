@@ -1,6 +1,7 @@
 package nfs
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
 )
@@ -340,12 +341,18 @@ type SETCLIENTID_CONFIRM4res struct {
 	Status uint32
 }
 
+type FileHandle4 []byte // max size: NFS4_FHSIZE=128
+
+func (fh FileHandle4) String() string {
+	return hex.EncodeToString([]byte(fh))
+}
+
 type PUTROOTFH4res struct {
 	Status uint32
 }
 
 type PUTFH4args struct {
-	Fh []byte // nfs_fh4
+	Fh FileHandle4 // nfs_fh4
 }
 
 type PUTFH4res struct {
@@ -364,7 +371,7 @@ type GETFH4args struct {
 }
 
 type GETFH4resok struct {
-	Fh []byte // nfs_fh4
+	Fh FileHandle4 // nfs_fh4
 }
 
 type GETFH4res struct {
@@ -633,6 +640,13 @@ type OPEN4args struct {
 	CreateHow *CreateHow4 // if OpenHow == OPEN4_CREATE
 
 	Claim *OpenClaim4
+}
+
+type OPENDG4args struct {
+	OpenStateId *StateId4
+	SeqId       uint32
+	ShareAccess uint32
+	ShareDeny   uint32
 }
 
 type NfsAce4 struct {

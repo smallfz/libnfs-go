@@ -7,6 +7,7 @@ import (
 	"github.com/smallfz/libnfs-go/nfs"
 	"github.com/smallfz/libnfs-go/xdr"
 	// "path"
+	// "encoding/json"
 )
 
 func encodeReaddirResult(res *nfs.READDIR4res) *nfs.ResGenericRaw {
@@ -24,7 +25,7 @@ func encodeReaddirResult(res *nfs.READDIR4res) *nfs.ResGenericRaw {
 	}
 
 	dat := buff.Bytes()
-	// log.Debugf("    readdir: result data size: %d bytes.", len(dat))
+	log.Debugf("    readdir: result data size: %d bytes.", len(dat))
 
 	// return a wrapped result.
 	return &nfs.ResGenericRaw{
@@ -35,9 +36,15 @@ func encodeReaddirResult(res *nfs.READDIR4res) *nfs.ResGenericRaw {
 
 func readDir(x nfs.RPCContext, args *nfs.READDIR4args) (*nfs.ResGenericRaw, error) {
 	stat := x.Stat()
-	cwd := stat.Cwd()
-	pathName := cwd
 	vfs := x.GetFS()
+
+	cwd, err := vfs.ResolveHandle(stat.CurrentHandle())
+	if err != nil {
+		log.Warnf("vfs.ResolveHandle: %v", err)
+		return &nfs.ResGenericRaw{Status: nfs.NFS4ERR_NOENT}, nil
+	}
+
+	pathName := cwd
 
 	// log.Debugf("readdir: '%s'", pathName)
 
@@ -103,11 +110,11 @@ func readDir(x nfs.RPCContext, args *nfs.READDIR4args) (*nfs.ResGenericRaw, erro
 			resCookieVerf = uint64(cookie + 1)
 
 			pathName := fs.Join(cwd, child.Name())
-			_, err := vfs.GetHandle(pathName)
-			if err != nil {
-				log.Warnf("vfs.GetHandle(%s): %v", pathName, err)
-				continue
-			}
+			// _, err := vfs.GetHandle(pathName)
+			// if err != nil {
+			// 	log.Warnf("vfs.GetHandle(%s): %v", pathName, err)
+			// 	continue
+			// }
 			entry := &nfs.Entry4{
 				Cookie:  uint64(cookie), // should be set. (blood and tears!)
 				Name:    child.Name(),
@@ -162,6 +169,12 @@ func readDir(x nfs.RPCContext, args *nfs.READDIR4args) (*nfs.ResGenericRaw, erro
 			Reply:      dirList,
 		},
 	}
+
+	// if dat, err := json.MarshalIndent(res, "", "  "); err != nil {
+	// 	log.Errorf("json.MarshalIndent: %v", err)
+	// } else {
+	// 	log.Println(string(dat))
+	// }
 
 	return encodeReaddirResult(res), nil
 }

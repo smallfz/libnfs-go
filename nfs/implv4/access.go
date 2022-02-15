@@ -43,7 +43,15 @@ func computeAccessOnFile(mode os.FileMode, access uint32) (uint32, uint32) {
 
 func access(x nfs.RPCContext, args *nfs.ACCESS4args) (*nfs.ACCESS4res, error) {
 	stat := x.Stat()
-	pathName := stat.Cwd()
+
+	pathName, err := x.GetFS().ResolveHandle(stat.CurrentHandle())
+	if err != nil {
+		log.Warnf(" access: ResolveHandle: %v", err)
+		return &nfs.ACCESS4res{
+			Status: nfs.NFS4ERR_NOENT,
+		}, nil
+	}
+
 	fi, err := x.GetFS().Stat(pathName)
 	if err != nil {
 		log.Warnf(" access: %s: %v", pathName, err)
