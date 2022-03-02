@@ -30,7 +30,7 @@ func write(x nfs.RPCContext, args *nfs.WRITE4args) (*nfs.WRITE4res, error) {
 
 	f := of.File()
 
-	if args.Offset > 0 {
+	if args.Offset >= 0 {
 		// log.Printf("  seek %d", args.Offset)
 		if _, err := f.Seek(int64(args.Offset), io.SeekStart); err != nil {
 			log.Warnf("f.Seek(%d): %v", args.Offset, err)
