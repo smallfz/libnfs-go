@@ -58,7 +58,7 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 		sizeConsumed += size
 	}
 
-	log.Infof("---------- compound proc (%d ops) ----------", opsCnt)
+	log.Debugf("---------- compound proc (%d ops) ----------", opsCnt)
 
 	rsStatusList := []uint32{}
 	rsOpList := []uint32{}
@@ -72,7 +72,7 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			sizeConsumed += size
 		}
 
-		log.Infof("(%d) %s", i, nfs.Proc4Name(opnum4))
+		log.Debugf("(%d) %s", i, nfs.Proc4Name(opnum4))
 
 		switch opnum4 {
 		case nfs.OP4_SETCLIENTID:
@@ -433,6 +433,24 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			}
 
 			res, err := remove(ctx, args)
+			if err != nil {
+				return sizeConsumed, err
+			}
+
+			rsOpList = append(rsOpList, opnum4)
+			rsStatusList = append(rsStatusList, res.Status)
+			rsList = append(rsList, res)
+			break
+
+		case nfs.OP4_COMMIT:
+			args := &nfs.COMMIT4args{}
+			if size, err := r.ReadAs(args); err != nil {
+				return sizeConsumed, err
+			} else {
+				sizeConsumed += size
+			}
+
+			res, err := commit(ctx, args)
 			if err != nil {
 				return sizeConsumed, err
 			}

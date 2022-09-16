@@ -26,7 +26,12 @@ type StatService interface {
 
 	AddOpenedFile(string, fs.File) uint32
 	GetOpenedFile(uint32) fs.FileOpenState
+	FindOpenedFiles(string) []fs.FileOpenState
 	RemoveOpenedFile(uint32) fs.FileOpenState
+
+	// CloseAndRemoveStallFiles shall close
+	//  and remove outdated opened files.
+	CloseAndRemoveStallFiles()
 
 	// CleanUp should remove all opened files and reset handle stack.
 	CleanUp()

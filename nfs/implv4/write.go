@@ -52,12 +52,33 @@ func write(x nfs.RPCContext, args *nfs.WRITE4args) (*nfs.WRITE4res, error) {
 		// log.Printf("  no data to be written.")
 	}
 
+	// resultCommitted := nfs.UNSTABLE4
+	resultCommitted := nfs.UNSTABLE4
+	fsync := false
+	if sizeWrote >= 0 {
+		switch args.Stable {
+		case nfs.DATA_SYNC4:
+			fsync = true
+			break
+		case nfs.FILE_SYNC4:
+			fsync = true
+			break
+		}
+		if fsync {
+			if err := f.Sync(); err != nil {
+				log.Warnf("f.Sync(%s): %v", f.Name(), err)
+			} else {
+				resultCommitted = args.Stable
+			}
+		}
+	}
+
 	res := &nfs.WRITE4res{
 		Status: nfs.NFS4_OK,
 		Ok: &nfs.WRITE4resok{
 			Count:     sizeWrote,
-			Committed: nfs.FILE_SYNC4,
-			WriteVerf: args.Offset,
+			Committed: resultCommitted,
+			WriteVerf: 0,
 		},
 	}
 	return res, nil

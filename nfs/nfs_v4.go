@@ -1,7 +1,7 @@
 package nfs
 
 import (
-	"encoding/hex"
+	// "encoding/hex"
 	"fmt"
 	"io"
 )
@@ -343,9 +343,9 @@ type SETCLIENTID_CONFIRM4res struct {
 
 type FileHandle4 []byte // max size: NFS4_FHSIZE=128
 
-func (fh FileHandle4) String() string {
-	return hex.EncodeToString([]byte(fh))
-}
+// func (fh FileHandle4) String() string {
+// 	return hex.EncodeToString([]byte(fh))
+// }
 
 type PUTROOTFH4res struct {
 	Status uint32
@@ -737,6 +737,20 @@ type REMOVE4resok struct {
 type REMOVE4res struct {
 	Status uint32
 	Ok     *REMOVE4resok
+}
+
+type COMMIT4args struct {
+	Offset uint64
+	Count  uint32
+}
+
+type COMMIT4resok struct {
+	Verifier uint64
+}
+
+type COMMIT4res struct {
+	Status uint32
+	Ok     *COMMIT4resok
 }
 
 /*

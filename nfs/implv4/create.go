@@ -88,7 +88,7 @@ func create(x nfs.RPCContext, args *nfs.CREATE4args) (*nfs.CREATE4res, error) {
 
 	fi, err := vfs.Stat(cwd)
 	if err != nil {
-		log.Warnf("vfs.Stat(%s): %v", cwd, err)
+		log.Debugf("    create: vfs.Stat(%s): %v", cwd, err)
 		return resFail500, nil
 	} else if !fi.IsDir() {
 		return resFailPerm, nil
@@ -105,7 +105,7 @@ func create(x nfs.RPCContext, args *nfs.CREATE4args) (*nfs.CREATE4res, error) {
 
 	decAttrs, err := decodeFAttrs4(args.CreateAttrs)
 	if err != nil {
-		log.Warnf("decodeFAttrs: %v", err)
+		log.Warnf("create: decodeFAttrs: %v", err)
 		return resFailPerm, nil
 	}
 
@@ -121,11 +121,11 @@ func create(x nfs.RPCContext, args *nfs.CREATE4args) (*nfs.CREATE4res, error) {
 		mod = mod | os.ModeDir
 
 		if err := vfs.MkdirAll(pathName, mod); err != nil {
-			log.Warnf("vfs.MkdirAll(%s): %v", pathName, err)
+			log.Warnf("create: vfs.MkdirAll(%s): %v", pathName, err)
 			return resFailPerm, nil
 		}
 		if fi, err := vfs.Stat(pathName); err != nil {
-			log.Warnf("vfs.Stat(%s): %v", pathName, err)
+			log.Warnf("create: vfs.Stat(%s): %v", pathName, err)
 			return resFailPerm, nil
 		} else {
 			attr := fileInfoToAttrs(vfs, pathName, fi, nil)
@@ -152,12 +152,12 @@ func create(x nfs.RPCContext, args *nfs.CREATE4args) (*nfs.CREATE4res, error) {
 
 		flag := os.O_CREATE | os.O_RDWR | os.O_TRUNC
 		if f, err := vfs.OpenFile(pathName, flag, mod); err != nil {
-			log.Warnf("vfs.OpenFile: %v", err)
+			log.Warnf("create: vfs.OpenFile: %v", err)
 			return resFailPerm, nil
 		} else {
 			defer f.Close()
 			if fi, err := f.Stat(); err != nil {
-				log.Warnf("f.Stat(): %v", err)
+				log.Warnf("create: f.Stat(): %v", err)
 				return resFailPerm, nil
 			} else {
 				attr := fileInfoToAttrs(vfs, pathName, fi, nil)

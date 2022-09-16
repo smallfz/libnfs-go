@@ -24,7 +24,7 @@ func readOpOpenDgArgs(r *xdr.Reader) (*nfs.OPENDG4args, int, error) {
 }
 
 func openDg(x nfs.RPCContext, args *nfs.OPENDG4args) (*nfs.ResGenericRaw, error) {
-	log.Infof(toJson(args))
+	// log.Infof(toJson(args))
 
 	// resFail500 := &nfs.ResGenericRaw{Status: nfs.NFS4ERR_SERVERFAULT}
 	resFailPerm := &nfs.ResGenericRaw{Status: nfs.NFS4ERR_PERM}

@@ -135,6 +135,8 @@ func (sess *Session) Start(ctx context.Context) error {
 			} else {
 				restSize -= size
 			}
+		} else {
+			return fmt.Errorf("Invalid rpc message: no suitable mux.")
 		}
 
 		if err := sess.sendResponse(buff.Bytes()); err != nil {

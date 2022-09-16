@@ -16,7 +16,7 @@ func getAttr(x nfs.RPCContext, args *nfs.GETATTR4args) (*nfs.GETATTR4res, error)
 	fh := x.Stat().CurrentHandle()
 	pathName, err := vfs.ResolveHandle(fh)
 	if err != nil {
-		log.Warnf("ResolveHandle: %v", err)
+		log.Warnf("getattr: ResolveHandle: %v", err)
 		return &nfs.GETATTR4res{Status: nfs.NFS4ERR_NOENT}, nil
 	}
 
@@ -37,13 +37,13 @@ func getAttr(x nfs.RPCContext, args *nfs.GETATTR4args) (*nfs.GETATTR4res, error)
 
 	fi, err := vfs.Stat(pathName)
 	if err != nil {
-		log.Warnf("vfs.Stat(%s): %v", pathName, err)
+		log.Debugf("getattr: vfs.Stat(%s): %v", pathName, err)
 		return &nfs.GETATTR4res{Status: nfs.NFS4ERR_NOENT}, nil
 	}
 
 	_, err = vfs.GetHandle(fi)
 	if err != nil {
-		log.Warnf("vfs.GetHandle: %v", err)
+		log.Warnf("getattr: vfs.GetHandle: %v", err)
 		return &nfs.GETATTR4res{Status: nfs.NFS4ERR_NOENT}, nil
 	}
 

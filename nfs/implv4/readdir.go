@@ -69,9 +69,19 @@ func readDir(x nfs.RPCContext, args *nfs.READDIR4args) (*nfs.ResGenericRaw, erro
 
 	log.Debugf(
 		"    readdir: dircount=%d, maxcount=%d. cookie=%d, cookieverf=%d.",
-		args.DirCount, args.MaxCount,
-		args.Cookie, args.CookieVerf,
+		args.DirCount,
+		args.MaxCount,
+		args.Cookie,
+		args.CookieVerf,
 	)
+
+	// force to incease limitations giving by client.
+	// if args.DirCount < 1024 * 32 {
+	// 	args.DirCount = 1024 * 32
+	// }
+	// if args.MaxCount < 1024 * 128 {
+	// 	args.MaxCount = 1024 * 128
+	// }
 
 	dirList := &nfs.DirList4{HasEntries: false, Eof: true}
 

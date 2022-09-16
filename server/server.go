@@ -74,7 +74,7 @@ func (s *Server) Serve() error {
 			go func() {
 				defer conn.Close()
 				if err := handleSession(ctx, s.backend, conn); err != nil {
-					log.Errorf("%v", err)
+					log.Errorf("handleSession: %v", err)
 				}
 			}()
 		}

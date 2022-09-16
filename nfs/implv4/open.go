@@ -154,7 +154,7 @@ func readOpOpenArgs(r *xdr.Reader) (*nfs.OPEN4args, int, error) {
 }
 
 func open(x nfs.RPCContext, args *nfs.OPEN4args) (*nfs.ResGenericRaw, error) {
-	log.Infof(toJson(args))
+	// log.Infof(toJson(args))
 
 	resFail500 := &nfs.ResGenericRaw{Status: nfs.NFS4ERR_SERVERFAULT}
 	resFailPerm := &nfs.ResGenericRaw{Status: nfs.NFS4ERR_PERM}
