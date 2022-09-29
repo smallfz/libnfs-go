@@ -81,7 +81,7 @@ func (w *Writer) WriteValue(v reflect.Value) (int, error) {
 		if vtyp.AssignableTo(vTo.Elem().Type()) {
 			vTo.Elem().Set(v)
 		} else if vtyp.ConvertibleTo(vTo.Elem().Type()) {
-			vmid := v.Convert(vTo.Type())
+			vmid := v.Convert(vTo.Elem().Type())
 			vTo.Elem().Set(vmid)
 		} else {
 			log.Errorf(

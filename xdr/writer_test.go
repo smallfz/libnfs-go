@@ -6,6 +6,7 @@ import (
 	// "math"
 	"encoding/binary"
 	"testing"
+	"time"
 )
 
 func TestWriter_varSizeBytes(t *testing.T) {
@@ -15,6 +16,18 @@ func TestWriter_varSizeBytes(t *testing.T) {
 		t.Fatalf("WriteAny(void): %v", err)
 	} else if size != 0 {
 		t.Fatalf("WriteAny(void): expects 0 bytes sent. but get %d.", size)
+	}
+}
+
+func TestWriter_timeDuration(t *testing.T) {
+	buff := bytes.NewBuffer([]byte{})
+	writer := NewWriter(buff)
+
+	dur := time.Hour * 4
+	if size, err := writer.WriteAny(dur); err != nil {
+		t.Fatalf("WriteAny(time.Duration): %v", err)
+	} else if size != 8 {
+		t.Fatalf("WriteAny(time.Duration): expects 8 bytes sent. but get %d.", size)
 	}
 }
 
