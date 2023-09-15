@@ -36,8 +36,8 @@ func TestWriter_Struct(t *testing.T) {
 		Iv:   123,
 		Iv32: 456,
 		Values: []*structTestB{
-			&structTestB{Value: 789},
-			&structTestB{Value: 10010},
+			{Value: 789},
+			{Value: 10010},
 		},
 		SingleB: &structTestB{Value: 666},
 		PlainB:  structTestB{Value: 999},

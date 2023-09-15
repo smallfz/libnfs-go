@@ -2,9 +2,10 @@ package memfs
 
 import (
 	"bytes"
-	"github.com/smallfz/libnfs-go/fs"
 	"io"
 	"sync"
+
+	"github.com/smallfz/libnfs-go/fs"
 )
 
 type dataNode struct {

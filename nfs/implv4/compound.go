@@ -2,7 +2,7 @@ package implv4
 
 import (
 	"io"
-	// "libnfs-go/fs"
+
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
 )
@@ -89,7 +89,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_SETCLIENTID_CONFIRM:
 			args := &nfs.SETCLIENTID_CONFIRM4args{}
@@ -105,7 +104,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_EXCHANGE_ID:
 			args := &nfs.EXCHANGE_ID4args{}
@@ -131,7 +129,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_PUTROOTFH:
 			// reset cwd to /
@@ -147,7 +144,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_GETATTR:
 			args := &nfs.GETATTR4args{}
@@ -165,7 +161,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_PUTFH:
 			args := &nfs.PUTFH4args{}
@@ -196,7 +191,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_GETFH:
 			stat := ctx.Stat()
@@ -228,7 +222,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_LOOKUP:
 			args := &nfs.LOOKUP4args{}
@@ -247,7 +240,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_ACCESS:
 			args := &nfs.ACCESS4args{}
@@ -266,7 +258,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_READDIR:
 			args := &nfs.READDIR4args{}
@@ -285,7 +276,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_SECINFO:
 			args := &nfs.SECINFO4args{}
@@ -300,7 +290,7 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 				Status: nfs.NFS4_OK,
 				Ok: &nfs.SECINFO4resok{
 					Items: []*nfs.Secinfo4{
-						&nfs.Secinfo4{
+						{
 							Flavor: 0,
 							FlavorInfo: &nfs.RPCSecGssInfo{
 								Service: nfs.RPC_GSS_SVC_NONE,
@@ -313,7 +303,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_RENEW:
 			args := &nfs.RENEW4args{}
@@ -331,16 +320,14 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_CREATE:
 			// rfc7530, 16.4.2
 			args, size, err := readOpCreateArgs(r)
 			if err != nil {
 				return sizeConsumed, err
-			} else {
-				sizeConsumed += size
 			}
+			sizeConsumed += size
 
 			res, err := create(ctx, args)
 			if err != nil {
@@ -350,15 +337,13 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_OPEN:
 			args, size, err := readOpOpenArgs(r)
 			if err != nil {
 				return sizeConsumed, err
-			} else {
-				sizeConsumed += size
 			}
+			sizeConsumed += size
 
 			res, err := open(ctx, args)
 			if err != nil {
@@ -368,15 +353,13 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_OPEN_DOWNGRADE:
 			args, size, err := readOpOpenDgArgs(r)
 			if err != nil {
 				return sizeConsumed, err
-			} else {
-				sizeConsumed += size
 			}
+			sizeConsumed += size
 
 			res, err := openDg(ctx, args)
 			if err != nil {
@@ -386,7 +369,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_CLOSE:
 			args := &nfs.CLOSE4args{}
@@ -404,7 +386,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_SETATTR:
 			args := &nfs.SETATTR4args{}
@@ -422,7 +403,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_REMOVE:
 			args := &nfs.REMOVE4args{}
@@ -440,7 +420,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_COMMIT:
 			args := &nfs.COMMIT4args{}
@@ -458,7 +437,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_WRITE:
 			args := &nfs.WRITE4args{}
@@ -476,7 +454,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_READ:
 			args := &nfs.READ4args{}
@@ -494,7 +471,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_SAVEFH:
 			st := ctx.Stat()
@@ -506,7 +482,6 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
 
 		case nfs.OP4_RESTOREFH:
 			st := ctx.Stat()
@@ -522,7 +497,50 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			rsOpList = append(rsOpList, opnum4)
 			rsStatusList = append(rsStatusList, res.Status)
 			rsList = append(rsList, res)
-			break
+
+		case nfs.OP4_RENAME:
+			var args nfs.RENAME4args
+			size, err := r.ReadAs(&args)
+			if err != nil {
+				return sizeConsumed, err
+			}
+			sizeConsumed += size
+
+			res, err := rename(ctx, &args)
+			if err != nil {
+				return sizeConsumed, err
+			}
+
+			rsOpList = append(rsOpList, opnum4)
+			rsStatusList = append(rsStatusList, res.Status)
+			rsList = append(rsList, res)
+
+		case nfs.OP4_LINK:
+			var args nfs.LINK4args
+			size, err := r.ReadAs(&args)
+			if err != nil {
+				return sizeConsumed, err
+			}
+			sizeConsumed += size
+
+			res, err := link(ctx, &args)
+			if err != nil {
+				return sizeConsumed, err
+			}
+
+			rsOpList = append(rsOpList, opnum4)
+			rsStatusList = append(rsStatusList, res.Status)
+			rsList = append(rsList, res)
+
+		case nfs.OP4_READLINK:
+			res, err := readlink(ctx)
+			if err != nil {
+				return sizeConsumed, err
+			}
+
+			rsOpList = append(rsOpList, opnum4)
+			rsStatusList = append(rsStatusList, res.Status)
+			rsList = append(rsList, res)
 
 		default:
 			log.Warnf("op not handled: %d.", opnum4)
@@ -553,11 +571,9 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 					log.Errorf("Compound(): io.Copy: %v", err)
 				}
 			}
-			break
 
 		default:
 			w.WriteAny(rs)
-			break
 		}
 	}
 

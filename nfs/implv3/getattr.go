@@ -12,23 +12,22 @@ import (
 //
 // SYNOPSIS
 //
-//     GETATTR3res NFSPROC3_GETATTR(GETATTR3args) = 1;
+//	GETATTR3res NFSPROC3_GETATTR(GETATTR3args) = 1;
 //
-//     struct GETATTR3args {
-//        nfs_fh3  object;
-//     };
+//	struct GETATTR3args {
+//	   nfs_fh3  object;
+//	};
 //
-//     struct GETATTR3resok {
-//        fattr3   obj_attributes;
-//     };
+//	struct GETATTR3resok {
+//	   fattr3   obj_attributes;
+//	};
 //
-//     union GETATTR3res switch (nfsstat3 status) {
-//     case NFS3_OK:
-//        GETATTR3resok  resok;
-//     default:
-//        void;
-//     };
-//
+//	union GETATTR3res switch (nfsstat3 status) {
+//	case NFS3_OK:
+//	   GETATTR3resok  resok;
+//	default:
+//	   void;
+//	};
 func GetAttr(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 	r, w := ctx.Reader(), ctx.Writer()
 

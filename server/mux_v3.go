@@ -1,8 +1,8 @@
 package server
 
 import (
-	// "github.com/smallfz/libnfs-go/log"
-	"fmt"
+	"errors"
+
 	"github.com/smallfz/libnfs-go/fs"
 	"github.com/smallfz/libnfs-go/nfs"
 	handlers "github.com/smallfz/libnfs-go/nfs/implv3"
@@ -51,5 +51,5 @@ func (x *Mux) HandleProc(h *nfs.RPCMsgCall) (int, error) {
 	case nfs.ProcReaddirPlus:
 		return handlers.ReaddirPlus(h, x)
 	}
-	return 0, fmt.Errorf("not implemented.")
+	return 0, errors.New("not implemented")
 }

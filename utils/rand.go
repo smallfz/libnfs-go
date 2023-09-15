@@ -7,6 +7,8 @@ import (
 
 func RandUint32() uint32 {
 	b := make([]byte, 4)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		panic(err)
+	}
 	return binary.BigEndian.Uint32(b)
 }

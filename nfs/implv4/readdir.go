@@ -2,12 +2,11 @@ package implv4
 
 import (
 	"bytes"
+
 	"github.com/smallfz/libnfs-go/fs"
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
 	"github.com/smallfz/libnfs-go/xdr"
-	// "path"
-	// "encoding/json"
 )
 
 func encodeReaddirResult(res *nfs.READDIR4res) *nfs.ResGenericRaw {

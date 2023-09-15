@@ -2,9 +2,10 @@ package memfs
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/smallfz/libnfs-go/fs"
 	"github.com/smallfz/libnfs-go/log"
-	"io"
 )
 
 type closeHandler func(bool, []byte)

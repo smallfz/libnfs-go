@@ -82,16 +82,16 @@ type writingBlock struct {
 
 func TestBufferSeekingMultipleTimes(t *testing.T) {
 	blocks := []*writingBlock{
-		&writingBlock{offset: 0, data: []byte("0123")},
-		&writingBlock{offset: 4, data: []byte("4567")},
-		&writingBlock{offset: 8, data: []byte("89ab")},
-		&writingBlock{offset: 12, data: []byte("cdef")},
-		&writingBlock{offset: 16, data: []byte("____")},
-		&writingBlock{offset: 20, data: []byte("AAA")},
+		{offset: 0, data: []byte("0123")},
+		{offset: 4, data: []byte("4567")},
+		{offset: 8, data: []byte("89ab")},
+		{offset: 12, data: []byte("cdef")},
+		{offset: 16, data: []byte("____")},
+		{offset: 20, data: []byte("AAA")},
 	}
 
 	index := make([]int, len(blocks))
-	for i, _ := range index {
+	for i := range index {
 		index[i] = i
 	}
 

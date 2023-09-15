@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+
 	"github.com/smallfz/libnfs-go/fs"
 	"github.com/smallfz/libnfs-go/nfs"
 	v4 "github.com/smallfz/libnfs-go/nfs/implv4"
@@ -38,5 +39,5 @@ func (x *Muxv4) HandleProc(h *nfs.RPCMsgCall) (int, error) {
 	case nfs.PROC4_COMPOUND:
 		return v4.Compound(h, x)
 	}
-	return 0, fmt.Errorf("Not implemented: %s", nfs.Proc4Name(h.Proc))
+	return 0, fmt.Errorf("not implemented: %s", nfs.Proc4Name(h.Proc))
 }

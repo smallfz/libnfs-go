@@ -1,7 +1,7 @@
 package memfs
 
 import (
-	"fmt"
+	"errors"
 	"io"
 	"os"
 	"sync"
@@ -83,7 +83,7 @@ func (b *Buffer) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	if cur < 0 {
-		return int64(b.cur), fmt.Errorf("invalid seeking position.")
+		return int64(b.cur), errors.New("invalid seeking position")
 	}
 
 	b.cur = cur

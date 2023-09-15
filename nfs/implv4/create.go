@@ -1,11 +1,12 @@
 package implv4
 
 import (
+	"os"
+
 	"github.com/smallfz/libnfs-go/fs"
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
 	"github.com/smallfz/libnfs-go/xdr"
-	"os"
 )
 
 func readOpCreateArgs(r *xdr.Reader) (*nfs.CREATE4args, int, error) {
@@ -13,9 +14,8 @@ func readOpCreateArgs(r *xdr.Reader) (*nfs.CREATE4args, int, error) {
 	typ, err := r.ReadUint32()
 	if err != nil {
 		return nil, sizeConsumed, err
-	} else {
-		sizeConsumed += 4
 	}
+	sizeConsumed += 4
 
 	args := &nfs.CREATE4args{
 		ObjType: typ,
@@ -23,40 +23,38 @@ func readOpCreateArgs(r *xdr.Reader) (*nfs.CREATE4args, int, error) {
 
 	switch typ {
 	case nfs.NF4LNK:
-		linkData := ""
-		if size, err := r.ReadAs(&linkData); err != nil {
+		var linkData string
+		size, err := r.ReadAs(&linkData)
+		if err != nil {
 			return nil, sizeConsumed, err
-		} else {
-			sizeConsumed += size
 		}
+		sizeConsumed += size
 		args.LinkData = linkData
-		break
 
 	case nfs.NF4BLK, nfs.NF4CHR:
 		devData := &nfs.Specdata4{}
-		if size, err := r.ReadAs(devData); err != nil {
+		size, err := r.ReadAs(devData)
+		if err != nil {
 			return nil, sizeConsumed, err
-		} else {
-			sizeConsumed += size
 		}
+		sizeConsumed += size
 		args.DevData = devData
-		break
 	}
 
-	objName := ""
-	if size, err := r.ReadAs(&objName); err != nil {
+	var objName string
+	size, err := r.ReadAs(&objName)
+	if err != nil {
 		return nil, sizeConsumed, err
-	} else {
-		sizeConsumed += size
 	}
+	sizeConsumed += size
 	args.ObjName = objName
 
 	attrs := &nfs.FAttr4{}
-	if size, err := r.ReadAs(attrs); err != nil {
+	size, err = r.ReadAs(attrs)
+	if err != nil {
 		return nil, sizeConsumed, err
-	} else {
-		sizeConsumed += size
 	}
+	sizeConsumed += size
 	args.CreateAttrs = attrs
 
 	return args, sizeConsumed, nil
@@ -64,10 +62,8 @@ func readOpCreateArgs(r *xdr.Reader) (*nfs.CREATE4args, int, error) {
 
 func create(x nfs.RPCContext, args *nfs.CREATE4args) (*nfs.CREATE4res, error) {
 	switch args.ObjType {
-	case nfs.NF4DIR, nfs.NF4REG:
-		break
-	case nfs.NF4LNK:
-		fallthrough
+	case nfs.NF4DIR, nfs.NF4REG, nfs.NF4LNK:
+		// Supported types
 	case nfs.NF4BLK, nfs.NF4CHR, nfs.NF4FIFO, nfs.NF4SOCK:
 		return &nfs.CREATE4res{Status: nfs.NFS4ERR_PERM}, nil
 	default:
@@ -90,7 +86,8 @@ func create(x nfs.RPCContext, args *nfs.CREATE4args) (*nfs.CREATE4res, error) {
 	if err != nil {
 		log.Debugf("    create: vfs.Stat(%s): %v", cwd, err)
 		return resFail500, nil
-	} else if !fi.IsDir() {
+	}
+	if !fi.IsDir() {
 		return resFailPerm, nil
 	}
 
@@ -114,7 +111,7 @@ func create(x nfs.RPCContext, args *nfs.CREATE4args) (*nfs.CREATE4res, error) {
 
 		// create a directory
 
-		mod := os.FileMode(0755)
+		mod := os.FileMode(0o755)
 		if decAttrs.Mode != nil {
 			mod = os.FileMode(*decAttrs.Mode)
 		}
@@ -124,56 +121,81 @@ func create(x nfs.RPCContext, args *nfs.CREATE4args) (*nfs.CREATE4res, error) {
 			log.Warnf("create: vfs.MkdirAll(%s): %v", pathName, err)
 			return resFailPerm, nil
 		}
-		if fi, err := vfs.Stat(pathName); err != nil {
+
+		fi, err := vfs.Stat(pathName)
+		if err != nil {
 			log.Warnf("create: vfs.Stat(%s): %v", pathName, err)
 			return resFailPerm, nil
-		} else {
-			attr := fileInfoToAttrs(vfs, pathName, fi, nil)
-			attrSet = attr.Mask
-
-			// set current fh to the newly created one.
-			if fh, err := vfs.GetHandle(fi); err != nil {
-				return resFailPerm, nil
-			} else {
-				x.Stat().SetCurrentHandle(fh)
-			}
-
-			break
 		}
+
+		attr := fileInfoToAttrs(vfs, pathName, fi, nil)
+		attrSet = attr.Mask
+
+		// set current fh to the newly created one.
+		fh, err := vfs.GetHandle(fi)
+		if err != nil {
+			return resFailPerm, nil
+		}
+		x.Stat().SetCurrentHandle(fh)
 
 	case nfs.NF4REG:
 
 		// create a regular file
 
-		mod := os.FileMode(0644)
+		mod := os.FileMode(0o644)
 		if decAttrs.Mode != nil {
 			mod = os.FileMode(*decAttrs.Mode)
 		}
 
 		flag := os.O_CREATE | os.O_RDWR | os.O_TRUNC
-		if f, err := vfs.OpenFile(pathName, flag, mod); err != nil {
+
+		f, err := vfs.OpenFile(pathName, flag, mod)
+		if err != nil {
 			log.Warnf("create: vfs.OpenFile: %v", err)
 			return resFailPerm, nil
-		} else {
-			defer f.Close()
-			if fi, err := f.Stat(); err != nil {
-				log.Warnf("create: f.Stat(): %v", err)
-				return resFailPerm, nil
-			} else {
-				attr := fileInfoToAttrs(vfs, pathName, fi, nil)
-				attrSet = attr.Mask
+		}
+		defer f.Close()
 
-				// set current fh to the newly created one.
-				if fh, err := vfs.GetHandle(fi); err != nil {
-					return resFailPerm, nil
-				} else {
-					x.Stat().SetCurrentHandle(fh)
-				}
-
-				break
-			}
+		fi, err := f.Stat()
+		if err != nil {
+			log.Warnf("create: f.Stat(): %v", err)
+			return resFailPerm, nil
 		}
 
+		attr := fileInfoToAttrs(vfs, pathName, fi, nil)
+		attrSet = attr.Mask
+
+		// set current fh to the newly created one.
+		fh, err := vfs.GetHandle(fi)
+		if err != nil {
+			return resFailPerm, nil
+		}
+		x.Stat().SetCurrentHandle(fh)
+
+	case nfs.NF4LNK:
+
+		// create symlink
+
+		err = vfs.Symlink(args.LinkData, pathName)
+		if err != nil {
+			return &nfs.CREATE4res{Status: nfs.NFS4err(err)}, nil
+		}
+
+		fi, err := vfs.Stat(pathName)
+		if err != nil {
+			log.Warnf("create: vfs.Stat(%s): %v", pathName, err)
+			return resFailPerm, nil
+		}
+
+		attr := fileInfoToAttrs(vfs, pathName, fi, nil)
+		attrSet = attr.Mask
+
+		// set current fh to the newly created one.
+		fh, err := vfs.GetHandle(fi)
+		if err != nil {
+			return resFailPerm, nil
+		}
+		x.Stat().SetCurrentHandle(fh)
 	}
 
 	res := &nfs.CREATE4res{

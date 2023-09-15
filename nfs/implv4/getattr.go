@@ -1,11 +1,8 @@
 package implv4
 
 import (
-	// "bytes"
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
-	// "libnfs-go/xdr"
-	// "encoding/base64"
 )
 
 func getAttr(x nfs.RPCContext, args *nfs.GETATTR4args) (*nfs.GETATTR4res, error) {

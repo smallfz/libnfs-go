@@ -6,17 +6,17 @@ import (
 
 func TestAbs(t *testing.T) {
 	grantedCases := [][]string{
-		[]string{"", "/"},
-		[]string{".", "/"},
-		[]string{"/", "/"},
-		[]string{"a/bc/def", "/a/bc/def"},
-		[]string{"/a/bc", "/a/bc"},
-		[]string{"abc", "/abc"},
-		[]string{"./abc", "/abc"},
-		[]string{"../abc", "/abc"},
-		[]string{"/../abc", "/abc"},
-		[]string{"./../abc", "/abc"},
-		[]string{"./../abc/def", "/abc/def"},
+		{"", "/"},
+		{".", "/"},
+		{"/", "/"},
+		{"a/bc/def", "/a/bc/def"},
+		{"/a/bc", "/a/bc"},
+		{"abc", "/abc"},
+		{"./abc", "/abc"},
+		{"../abc", "/abc"},
+		{"/../abc", "/abc"},
+		{"./../abc", "/abc"},
+		{"./../abc/def", "/abc/def"},
 	}
 
 	for _, row := range grantedCases {
@@ -30,11 +30,11 @@ func TestAbs(t *testing.T) {
 
 func TestPathJoin(t *testing.T) {
 	grantedCases := [][]string{
-		[]string{"", "/", "/"},
-		[]string{"abc", "/def", "/abc/def"},
-		[]string{"/abc", "/def", "/abc/def"},
-		[]string{"/abc", "def", "/abc/def"},
-		[]string{"/abc", "def", "/ijk", "/abc/def/ijk"},
+		{"", "/", "/"},
+		{"abc", "/def", "/abc/def"},
+		{"/abc", "/def", "/abc/def"},
+		{"/abc", "def", "/abc/def"},
+		{"/abc", "def", "/ijk", "/abc/def/ijk"},
 	}
 
 	for _, row := range grantedCases {

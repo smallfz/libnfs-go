@@ -72,10 +72,8 @@ func (h *RPCMsgCall) String() string {
 		switch h.Vers {
 		case 3:
 			procName = Proc3Name(h.Proc)
-			break
 		case 4:
 			procName = Proc4Name(h.Proc)
-			break
 		}
 	}
 	return fmt.Sprintf(

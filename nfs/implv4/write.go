@@ -2,14 +2,13 @@ package implv4
 
 import (
 	"bytes"
+	"io"
+
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
-	"io"
-	// "os"
 )
 
 func write(x nfs.RPCContext, args *nfs.WRITE4args) (*nfs.WRITE4res, error) {
-
 	// stat := x.Stat()
 	// vfs := x.GetFS()
 
@@ -41,13 +40,13 @@ func write(x nfs.RPCContext, args *nfs.WRITE4args) (*nfs.WRITE4res, error) {
 	sizeWrote := uint32(0)
 	if args.Data != nil && len(args.Data) > 0 {
 		buff := bytes.NewReader(args.Data)
-		if size, err := io.CopyN(f, buff, int64(len(args.Data))); err != nil {
+		size, err := io.CopyN(f, buff, int64(len(args.Data)))
+		if err != nil {
 			log.Warnf("io.CopyN(): %v", err)
 			return &nfs.WRITE4res{Status: nfs.NFS4ERR_PERM}, nil
-		} else {
-			sizeWrote = uint32(size)
-			// log.Printf("  %d bytes wrote.", sizeWrote)
 		}
+		sizeWrote = uint32(size)
+		// log.Printf("  %d bytes wrote.", sizeWrote)
 	} else {
 		// log.Printf("  no data to be written.")
 	}
@@ -59,11 +58,10 @@ func write(x nfs.RPCContext, args *nfs.WRITE4args) (*nfs.WRITE4res, error) {
 		switch args.Stable {
 		case nfs.DATA_SYNC4:
 			fsync = true
-			break
 		case nfs.FILE_SYNC4:
 			fsync = true
-			break
 		}
+
 		if fsync {
 			if err := f.Sync(); err != nil {
 				log.Warnf("f.Sync(%s): %v", f.Name(), err)

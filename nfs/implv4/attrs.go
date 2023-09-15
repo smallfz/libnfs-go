@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"os"
+	"os/user"
+	"strconv"
+	"strings"
+
 	"github.com/smallfz/libnfs-go/fs"
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
 	"github.com/smallfz/libnfs-go/xdr"
-	// "os"
-	// "time"
 )
 
 const (
@@ -27,9 +30,12 @@ const (
 	A_rdattr_error       = 11 // nfsstat4, enum int
 	A_acl                = 12 // nfsace4, struct{uint32, uint32, uint32, string}
 	A_aclsupport         = 13 // uint32
+	A_chown_restricted   = 18 // bool
 	A_filehandle         = 19 // nfs_fh4, opaque<>
 	A_fileid             = 20 // uint64
+	A_maxname            = 29 // uint32
 	A_mode               = 33 // (v4.1) uint32
+	A_no_trunc           = 34 // bool
 	A_numlinks           = 35 // uint32
 	A_owner              = 36 // string
 	A_owner_group        = 37 // string
@@ -42,35 +48,33 @@ const (
 	A_suppattr_exclcreat = 75 // (v4.1) bitmap4
 )
 
-var (
-	AttrsDefaultSet = []int{
-		// A_supported_attrs,
-		A_type,
-		// A_fh_expire_type,
-		A_change,
-		A_size,
-		// A_link_support,
-		// A_symlink_support,
-		// A_named_attr,
-		A_fsid,
-		// A_unique_handles,
-		// A_lease_time,
-		A_rdattr_error,
-		A_filehandle,
-		A_fileid,
-		A_mode,
-		A_numlinks,
-		A_owner,
-		A_owner_group,
-		A_rawdev,
-		A_space_used,
-		A_time_access,
-		A_time_metadata,
-		A_time_modify,
-		A_mounted_on_fileid,
-		// A_suppattr_exclcreat,
-	}
-)
+var AttrsDefaultSet = []int{
+	// A_supported_attrs,
+	A_type,
+	// A_fh_expire_type,
+	A_change,
+	A_size,
+	// A_link_support,
+	// A_symlink_support,
+	// A_named_attr,
+	A_fsid,
+	// A_unique_handles,
+	// A_lease_time,
+	A_rdattr_error,
+	A_filehandle,
+	A_fileid,
+	A_mode,
+	A_numlinks,
+	A_owner,
+	A_owner_group,
+	A_rawdev,
+	A_space_used,
+	A_time_access,
+	A_time_metadata,
+	A_time_modify,
+	A_mounted_on_fileid,
+	// A_suppattr_exclcreat,
+}
 
 var (
 	AttrsSupported = []int{
@@ -87,9 +91,12 @@ var (
 		A_lease_time,
 		A_aclsupport,
 		A_rdattr_error,
+		A_chown_restricted,
 		A_filehandle,
 		A_fileid,
+		A_maxname,
 		A_mode,
+		A_no_trunc,
 		A_numlinks,
 		A_owner,
 		A_owner_group,
@@ -146,8 +153,12 @@ func GetAttrNameById(id int) (string, bool) {
 		return "filehandle", true
 	case A_fileid:
 		return "fileid", true
+	case A_maxname:
+		return "maxname", true
 	case A_mode:
 		return "mode", true
+	case A_no_trunc:
+		return "no_trunc", true
 	case A_numlinks:
 		return "numlinks", true
 	case A_owner:
@@ -189,7 +200,7 @@ func getAttrsMaxBytesSize(req map[int]bool) uint32 {
 	}
 
 	maxId := 0
-	for a, _ := range req {
+	for a := range req {
 		if a > maxId {
 			maxId = a
 		}
@@ -211,7 +222,9 @@ func getAttrsMaxBytesSize(req map[int]bool) uint32 {
 		A_rdattr_error:      4,
 		A_filehandle:        128 + 4, // max value
 		A_fileid:            8,
+		A_maxname:           4,
 		A_mode:              4,
+		A_no_trunc:          4,
 		A_numlinks:          4,
 		A_owner:             16, // estimated value
 		A_owner_group:       16, // estimated value
@@ -259,6 +272,8 @@ func fileInfoToAttrs(vfs fs.FS, pathName string, fi fs.FileInfo, attrsRequest ma
 		idxSupport[a] = true
 	}
 
+	attrsFS := vfs.Attributes()
+
 	idxDefault := map[int]bool{}
 	for _, a := range AttrsDefaultSet {
 		idxDefault[a] = true
@@ -269,14 +284,14 @@ func fileInfoToAttrs(vfs fs.FS, pathName string, fi fs.FileInfo, attrsRequest ma
 	}
 
 	maxId := 0
-	for a, _ := range attrsRequest {
+	for a := range attrsRequest {
 		if a > maxId {
 			maxId = a
 		}
 	}
 
 	idxReturn := map[int]bool{}
-	for a, _ := range attrsRequest {
+	for a := range attrsRequest {
 		idxReturn[a] = false
 	}
 
@@ -290,7 +305,6 @@ func fileInfoToAttrs(vfs fs.FS, pathName string, fi fs.FileInfo, attrsRequest ma
 	// 		fallthrough
 	// 	default:
 	// 		log.Printf("     attr.%s = %v", attrName, v)
-	// 		break
 	// 	}
 	// }
 
@@ -302,8 +316,6 @@ func fileInfoToAttrs(vfs fs.FS, pathName string, fi fs.FileInfo, attrsRequest ma
 			log.Errorf("attr.%s: w.WriteAny: %d bytes wrote(but expects %d).",
 				attrName, size, sizeExpected,
 			)
-		} else {
-			// debugf(a, target)
 		}
 	}
 
@@ -327,53 +339,61 @@ func fileInfoToAttrs(vfs fs.FS, pathName string, fi fs.FileInfo, attrsRequest ma
 		case A_supported_attrs:
 			v := bitmap4Encode(idxSupport)
 			writeAny(a, v, 4+4*len(v))
-			break
+
 		case A_type:
 			v := nfs.NF4REG
-			if fi.IsDir() {
+			switch fi.Mode().Type() {
+			case os.ModeDir:
 				v = nfs.NF4DIR
+			case os.ModeSymlink:
+				v = nfs.NF4LNK
+			case os.ModeSocket:
+				v = nfs.NF4SOCK
 			}
 			writeAny(a, v, 4)
-			break
+
 		case A_fh_expire_type:
 			v := nfs.FH4_VOLATILE_ANY
 			writeAny(a, v, 4)
-			break
+
 		case A_change:
 			changeid := uint64(fi.ModTime().Unix())
 			writeAny(a, changeid, 8)
-			break
+
 		case A_size:
 			size := uint64(fi.Size())
 			writeAny(a, size, 8)
-			break
+
 		case A_link_support:
-			writeAny(a, true, 4)
-			break
+			writeAny(a, attrsFS.LinkSupport, 4)
+
 		case A_symlink_support:
-			writeAny(a, false, 4)
-			break
+			writeAny(a, attrsFS.SymlinkSupport, 4)
+
 		case A_named_attr:
 			writeAny(a, false, 4)
-			break
+
 		case A_fsid:
 			fsid := &nfs.Fsid4{Major: 0, Minor: 0}
 			writeAny(a, fsid, 8+8)
-			break
+
 		case A_unique_handles:
 			writeAny(a, true, 4)
-			break
+
 		case A_lease_time:
 			ttl := uint32(300) // seconds, rfc7530:5.8.1.11
 			writeAny(a, ttl, 4)
-			break
+
 		case A_rdattr_error:
 			status := nfs.NFS4_OK
 			writeAny(a, status, 4)
-			break
+
 		case A_aclsupport:
 			writeAny(a, uint32(0), 4)
-			break
+
+		case A_chown_restricted:
+			writeAny(a, attrsFS.ChownRestricted, 4)
+
 		case A_filehandle:
 			fh, err := vfs.GetHandle(fi)
 			if err != nil {
@@ -383,69 +403,73 @@ func fileInfoToAttrs(vfs fs.FS, pathName string, fi fs.FileInfo, attrsRequest ma
 				}
 			}
 			writeAny(a, fh, 4+len(fh)+xdr.Pad(len(fh)))
-			break
+
 		case A_fileid:
 			fileid := vfs.GetFileId(fi)
 			writeAny(a, fileid, 8)
-			break
+
+		case A_maxname:
+			writeAny(a, attrsFS.MaxName, 4)
+
 		case A_mode:
 			mask := (uint32(1) << 9) - 1
 			mode := uint32(fi.Mode()) & mask
 			writeAny(a, mode, 4)
-			break
+
+		case A_no_trunc:
+			writeAny(a, attrsFS.NoTrunc, 4)
+
 		case A_numlinks:
 			n := uint32(0)
 			switch i := fi.(type) {
 			case fs.FileInfo:
 				n = uint32(i.NumLinks())
-				break
 			}
 			writeAny(a, n, 4)
-			break
+
 		case A_owner:
 			writeAny(a, "0", 4+1+xdr.Pad(1))
-			break
+
 		case A_owner_group:
 			writeAny(a, "0", 4+1+xdr.Pad(1))
-			break
+
 		case A_rawdev:
 			v := &nfs.Specdata4{ /* uint32, uint32 */ }
 			writeAny(a, v, 4+4)
-			break
+
 		case A_space_used:
 			v := uint64(1024*4 + fi.Size())
 			writeAny(a, v, 8)
-			break
+
 		case A_time_access:
 			v := &nfs.NfsTime4{
 				Seconds:  uint64(fi.ATime().Unix()),
 				NSeconds: uint32(0),
 			}
 			writeAny(a, v, 8+4)
-			break
+
 		case A_time_metadata:
 			v := &nfs.NfsTime4{
 				Seconds: uint64(fi.CTime().Unix()),
 			}
 			writeAny(a, v, 8+4)
-			break
+
 		case A_time_modify:
 			v := &nfs.NfsTime4{
 				Seconds: uint64(fi.ModTime().Unix()),
 			}
 			writeAny(a, v, 8+4)
-			break
+
 		case A_mounted_on_fileid:
 			fileid := vfs.GetFileId(fi)
 			writeAny(a, fileid, 8)
-			break
+
 		case A_suppattr_exclcreat:
 			v := bitmap4Encode(idxSupport)
 			writeAny(a, v, 4+4*len(v))
-			break
+
 		default:
 			log.Warnf("(!)requested attr %s not handled!", attrName)
-			break
 		}
 	}
 
@@ -515,7 +539,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.SupportedAttrs = bm4
 				fmt.Printf("   value: %v\n", bm4)
-				break
+
 			case A_type:
 				v := uint32(0)
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -523,7 +547,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.Type = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_fh_expire_type:
 				v := uint32(0)
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -531,7 +555,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.FhExpireType = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_change:
 				v := uint64(0)
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -539,7 +563,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.Change = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_size:
 				v := uint64(0)
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -547,7 +571,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.Size = &v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_link_support:
 				v := false
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -555,7 +579,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.LinkSupport = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_symlink_support:
 				v := false
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -563,7 +587,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.SymlinkSupport = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_named_attr:
 				v := false
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -571,7 +595,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.NamedAttr = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_fsid:
 				v := nfs.Fsid4{}
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -579,7 +603,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.Fsid = &v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_unique_handles:
 				v := false
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -587,7 +611,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.UniqueHandles = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_lease_time:
 				v := uint32(0)
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -595,7 +619,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.LeaseTime = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_rdattr_error:
 				v := uint32(0)
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -603,7 +627,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.RdattrError = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_filehandle:
 				v := []byte{}
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -611,7 +635,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.FileHandle = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_fileid:
 				v := uint64(0)
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -619,7 +643,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.FileId = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_mode: // v4.1
 				v := uint32(0)
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -627,7 +651,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.Mode = &v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_numlinks:
 				v := uint32(0)
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -635,7 +659,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.NumLinks = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_owner:
 				v := ""
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -643,7 +667,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.Owner = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_owner_group:
 				v := ""
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -651,7 +675,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.OwnerGroup = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_rawdev:
 				v := nfs.Specdata4{}
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -659,7 +683,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.Rawdev = &v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_space_used:
 				v := uint64(0)
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -667,7 +691,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.SpaceUsed = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_time_access, A_time_metadata, A_time_modify:
 				v := nfs.NfsTime4{}
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -676,16 +700,16 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				switch i {
 				case A_time_access:
 					decAttr.TimeAccess = &v
-					break
+
 				case A_time_metadata:
 					decAttr.TimeMetadata = &v
-					break
+
 				case A_time_modify:
 					decAttr.TimeModify = &v
-					break
+
 				}
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_mounted_on_fileid:
 				v := uint64(0)
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -693,7 +717,7 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.MountedOnFileId = v
 				fmt.Printf("   value: %v\n", v)
-				break
+
 			case A_suppattr_exclcreat: // v4.1
 				v := []uint32{}
 				if _, err := ar.ReadAs(&v); err != nil {
@@ -701,10 +725,51 @@ func decodeFAttrs4(attr *nfs.FAttr4) (*Attr, error) {
 				}
 				decAttr.SuppAttrExclCreat = v
 				fmt.Printf("   value: %v\n", v)
-				break
 			}
 		}
 	}
 
 	return decAttr, nil
+}
+
+func chownAttrs(owner, group string) (int, int, error) {
+	// Default value from the server environment
+	uid := os.Getuid()
+	gid := os.Getgid()
+
+	o, _, ok := strings.Cut(owner, "@")
+	if !ok {
+		o = owner
+	}
+
+	if o != "" {
+		usr, err := user.Lookup(o)
+		if err != nil {
+			return uid, gid, err
+		}
+
+		uid, err = strconv.Atoi(usr.Uid)
+		if err != nil {
+			return uid, gid, err
+		}
+	}
+
+	g, _, ok := strings.Cut(group, "@")
+	if !ok {
+		g = group
+	}
+
+	if g != "" {
+		grp, err := user.LookupGroup(g)
+		if err != nil {
+			return uid, gid, err
+		}
+
+		gid, err = strconv.Atoi(grp.Gid)
+		if err != nil {
+			return uid, gid, err
+		}
+	}
+
+	return uid, gid, nil
 }

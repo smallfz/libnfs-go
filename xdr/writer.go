@@ -3,10 +3,11 @@ package xdr
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/smallfz/libnfs-go/log"
 	"io"
 	"math"
 	"reflect"
+
+	"github.com/smallfz/libnfs-go/log"
 )
 
 type Writer struct {
@@ -65,11 +66,11 @@ func (w *Writer) WriteValue(v reflect.Value) (int, error) {
 			vTo.Elem().Set(vmid)
 		} else {
 			log.Errorf(
-				"unable to assign %s to %s.",
+				"unable to assign %s to %s",
 				vtyp.Name(), vTo.Type().Name(),
 			)
 			return 0, fmt.Errorf(
-				"unable to assign %s to %s.",
+				"unable to assign %s to %s",
 				vtyp.Name(), vTo.Type().Name(),
 			)
 		}
@@ -85,11 +86,11 @@ func (w *Writer) WriteValue(v reflect.Value) (int, error) {
 			vTo.Elem().Set(vmid)
 		} else {
 			log.Errorf(
-				"unable to assign %s to %s.",
+				"unable to assign %s to %s",
 				vtyp.Name(), vTo.Type().Name(),
 			)
 			return 0, fmt.Errorf(
-				"unable to assign %s to %s.",
+				"unable to assign %s to %s",
 				vtyp.Name(), vTo.Type().Name(),
 			)
 		}
@@ -206,7 +207,7 @@ func (w *Writer) WriteValue(v reflect.Value) (int, error) {
 
 	}
 
-	return 0, fmt.Errorf("Type not supported: %s.", vtyp.Name())
+	return 0, fmt.Errorf("type not supported: %s", vtyp.Name())
 }
 
 func (w *Writer) WriteBytesAutoPad(dat []byte) (int, error) {

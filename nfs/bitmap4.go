@@ -2,7 +2,7 @@ package nfs
 
 func Bitmap4Encode(x map[int]bool) []uint32 {
 	max := 0
-	for v, _ := range x {
+	for v := range x {
 		if v > max {
 			max = v
 		}

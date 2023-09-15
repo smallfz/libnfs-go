@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"testing"
+
 	"github.com/smallfz/libnfs-go/nfs"
 	"github.com/smallfz/libnfs-go/xdr"
-	"testing"
 )
 
 func TestParsingSETCLIENTID4_res(t *testing.T) {
@@ -75,5 +76,4 @@ func TestParsingSETCLIENTID4_res(t *testing.T) {
 	}
 
 	fmt.Println(toJson(res))
-
 }

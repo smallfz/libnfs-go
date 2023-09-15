@@ -1,11 +1,12 @@
-package memfs
+package backend
 
 import (
+	"sync"
+	"time"
+
 	"github.com/smallfz/libnfs-go/fs"
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
-	"sync"
-	"time"
 )
 
 type openedFile struct {
@@ -52,25 +53,33 @@ func (t *Stat) PopHandle() (nfs.FileHandle4, bool) {
 	t.lck.Lock()
 	defer t.lck.Unlock()
 
-	if t.handleStack != nil {
-		if len(t.handleStack) > 0 {
-			size := len(t.handleStack)
-			last := t.handleStack[size-1]
-			t.handleStack = t.handleStack[:size-1]
-			return last, true
-		}
+	if len(t.handleStack) == 0 {
+		return nil, false
 	}
-	return nil, false
+
+	size := len(t.handleStack)
+	last := t.handleStack[size-1]
+	t.handleStack = t.handleStack[:size-1]
+	return last, true
+}
+
+func (t *Stat) PeekHandle() (nfs.FileHandle4, bool) {
+	t.lck.Lock()
+	defer t.lck.Unlock()
+
+	if len(t.handleStack) == 0 {
+		return nil, false
+	}
+
+	size := len(t.handleStack)
+	return t.handleStack[size-1], true
 }
 
 func (t *Stat) PushHandle(item nfs.FileHandle4) {
 	t.lck.Lock()
 	defer t.lck.Unlock()
 
-	if t.handleStack == nil {
-		t.handleStack = []nfs.FileHandle4{}
-	}
-	t.handleStack = append(t.handleStack, item)
+	t.handleStack = append(t.handleStack, item) // append handles the fact that t.handleStack may be nil
 }
 
 func (t *Stat) SetClientId(clientId uint64) {
