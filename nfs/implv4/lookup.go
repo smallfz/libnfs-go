@@ -1,9 +1,10 @@
 package implv4
 
 import (
+	"path"
+
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
-	"path"
 )
 
 func lookup(x nfs.RPCContext, args *nfs.LOOKUP4args) (*nfs.LOOKUP4res, error) {
@@ -18,8 +19,8 @@ func lookup(x nfs.RPCContext, args *nfs.LOOKUP4args) (*nfs.LOOKUP4res, error) {
 	stat := x.Stat()
 	vfs := x.GetFS()
 
-	fh := stat.CurrentHandle()
-	folder, err := vfs.ResolveHandle(fh)
+	fh4 := stat.CurrentHandle()
+	folder, err := vfs.ResolveHandle(fh4)
 	if err != nil {
 		log.Warnf("ResolveHandle: %v", err)
 		return &nfs.LOOKUP4res{Status: nfs.NFS4ERR_PERM}, nil
@@ -27,21 +28,22 @@ func lookup(x nfs.RPCContext, args *nfs.LOOKUP4args) (*nfs.LOOKUP4res, error) {
 
 	pathName := path.Join(folder, args.ObjName)
 
-	if fi, err := x.GetFS().Stat(pathName); err != nil {
+	fi, err := x.GetFS().Stat(pathName)
+	if err != nil {
 		log.Warnf(" lookup: %s: %v", pathName, err)
 		return &nfs.LOOKUP4res{
 			Status: nfs.NFS4ERR_NOENT,
 		}, nil
-	} else {
-		// stat.SetCwd(pathName)
-		if fh, err := vfs.GetHandle(fi); err != nil {
-			return &nfs.LOOKUP4res{
-				Status: nfs.NFS4ERR_NOENT,
-			}, nil
-		} else {
-			stat.SetCurrentHandle(fh)
-		}
 	}
+
+	// stat.SetCwd(pathName)
+	fh, err := vfs.GetHandle(fi)
+	if err != nil {
+		return &nfs.LOOKUP4res{
+			Status: nfs.NFS4ERR_NOENT,
+		}, nil
+	}
+	stat.SetCurrentHandle(fh)
 
 	res := &nfs.LOOKUP4res{
 		Status: nfs.NFS4_OK,

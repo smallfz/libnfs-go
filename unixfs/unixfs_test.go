@@ -1,4 +1,4 @@
-package memfs
+package unixfs_test
 
 import (
 	"bytes"
@@ -8,12 +8,24 @@ import (
 	"testing"
 
 	"github.com/smallfz/libnfs-go/fs"
+	"github.com/smallfz/libnfs-go/unixfs"
 )
 
-var _ fs.FS = new(MemFS) // Check interface
+var _ fs.FS = new(unixfs.UnixFS) // Check interface
 
 func TestMemfsFileSeekRead(t *testing.T) {
-	vfs := NewMemFS()
+	workdir, err := os.MkdirTemp("", "unixfs")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("workdir:", workdir)
+
+	vfs, err := unixfs.New(workdir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//
 
 	name := "hello.txt"
 	content := "hello world!"
@@ -55,7 +67,18 @@ func TestMemfsFileSeekRead(t *testing.T) {
 }
 
 func TestMemfsFileOpenTrunc(t *testing.T) {
-	vfs := NewMemFS()
+	workdir, err := os.MkdirTemp("", "unixfs")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("workdir:", workdir)
+
+	vfs, err := unixfs.New(workdir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//
 
 	name := "hello.txt"
 	content := "hello world!"
@@ -114,7 +137,18 @@ func TestMemfsFileOpenTrunc(t *testing.T) {
 }
 
 func TestMemfsFileOperations(t *testing.T) {
-	vfs := NewMemFS()
+	workdir, err := os.MkdirTemp("", "unixfs")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("workdir:", workdir)
+
+	vfs, err := unixfs.New(workdir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//
 
 	folder := "/webapp"
 	mode := os.FileMode(0o755)
@@ -254,7 +288,16 @@ func TestMemfsFileOperations(t *testing.T) {
 }
 
 func TestMemfsMkdir(t *testing.T) {
-	vfs := NewMemFS()
+	workdir, err := os.MkdirTemp("", "unixfs")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("workdir:", workdir)
+
+	vfs, err := unixfs.New(workdir)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// (1) create a folder
 

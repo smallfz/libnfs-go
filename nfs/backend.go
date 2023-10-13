@@ -1,8 +1,9 @@
 package nfs
 
 import (
-	"github.com/smallfz/libnfs-go/fs"
 	"net"
+
+	"github.com/smallfz/libnfs-go/fs"
 )
 
 // SessionState represents a client network session.
@@ -19,6 +20,7 @@ type StatService interface {
 	CurrentHandle() FileHandle4
 
 	PushHandle(FileHandle4)
+	PeekHandle() (FileHandle4, bool)
 	PopHandle() (FileHandle4, bool)
 
 	SetClientId(uint64)
@@ -39,7 +41,6 @@ type StatService interface {
 
 // BackendSession has a lifetime exact as the client connection.
 type BackendSession interface {
-
 	// GetFS should return a FS implementation.
 	GetFS() fs.FS
 

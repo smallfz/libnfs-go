@@ -6,13 +6,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net"
+	"sync"
+
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
 	"github.com/smallfz/libnfs-go/nfs/implv4"
 	"github.com/smallfz/libnfs-go/xdr"
-	"io"
-	"net"
-	"sync"
 )
 
 const (
@@ -454,8 +455,6 @@ func proxyStream(s *Session, tag string, ctx context.Context, src io.Reader, dst
 			return fmt.Errorf("writer.Write(%d bytes): %v", len(reqRawb), err)
 		}
 	}
-
-	return nil
 }
 
 func handleSession(ctx context.Context, conn net.Conn) error {
@@ -515,5 +514,4 @@ func main() {
 			}()
 		}
 	}
-
 }

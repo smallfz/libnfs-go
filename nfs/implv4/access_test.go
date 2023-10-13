@@ -1,13 +1,14 @@
 package implv4
 
 import (
-	"github.com/smallfz/libnfs-go/nfs"
 	"os"
 	"testing"
+
+	"github.com/smallfz/libnfs-go/nfs"
 )
 
 func TestAccess_file_0555_w(t *testing.T) {
-	mode := os.FileMode(0555)
+	mode := os.FileMode(0o555)
 	access := nfs.ACCESS4_MODIFY
 
 	support, accForFh := computeAccessOnFile(mode, access)

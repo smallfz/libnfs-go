@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"testing"
+
 	"github.com/smallfz/libnfs-go/nfs"
 	"github.com/smallfz/libnfs-go/xdr"
-	"testing"
 )
 
 /*
@@ -184,7 +185,6 @@ func TestParsingCOMPOUND4_res_putfh_readdir(t *testing.T) {
 			return
 		}
 	}
-
 }
 
 func TestParsingCOMPOUND4_res_getAttr(t *testing.T) {
@@ -313,5 +313,4 @@ func TestParsingCOMPOUND4_res_getAttr(t *testing.T) {
 			return
 		}
 	}
-
 }

@@ -3,11 +3,12 @@ package implv4
 import (
 	"bytes"
 	"fmt"
+	"os"
+
 	"github.com/smallfz/libnfs-go/fs"
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
 	"github.com/smallfz/libnfs-go/xdr"
-	"os"
 )
 
 func readOpOpenArgs(r *xdr.Reader) (*nfs.OPEN4args, int, error) {
@@ -18,138 +19,132 @@ func readOpOpenArgs(r *xdr.Reader) (*nfs.OPEN4args, int, error) {
 	seqId, err := r.ReadUint32()
 	if err != nil {
 		return nil, sizeConsumed, err
-	} else {
-		sizeConsumed += 4
-		args.SeqId = seqId
 	}
+	sizeConsumed += 4
+	args.SeqId = seqId
 
-	if v, err := r.ReadUint32(); err != nil {
+	v, err := r.ReadUint32()
+	if err != nil {
 		return nil, sizeConsumed, err
-	} else {
-		sizeConsumed += 4
-		args.ShareAccess = v
 	}
+	sizeConsumed += 4
+	args.ShareAccess = v
 
-	if v, err := r.ReadUint32(); err != nil {
+	v, err = r.ReadUint32()
+	if err != nil {
 		return nil, sizeConsumed, err
-	} else {
-		sizeConsumed += 4
-		args.ShareDeny = v
 	}
+	sizeConsumed += 4
+	args.ShareDeny = v
 
 	/* open_owner4 */
 
 	owner := &nfs.OpenOwner4{}
-	if size, err := r.ReadAs(owner); err != nil {
+	size, err := r.ReadAs(owner)
+	if err != nil {
 		return nil, sizeConsumed, err
-	} else {
-		sizeConsumed += size
-		args.Owner = owner
 	}
+	sizeConsumed += size
+	args.Owner = owner
 
-	if v, err := r.ReadUint32(); err != nil {
+	v, err = r.ReadUint32()
+	if err != nil {
 		return nil, sizeConsumed, err
-	} else {
-		sizeConsumed += 4
-		args.OpenHow = v
 	}
+	sizeConsumed += 4
+	args.OpenHow = v
 
 	/* openflag4 */
 
 	switch args.OpenHow {
 	case nfs.OPEN4_CREATE:
 		how := &nfs.CreateHow4{}
-
-		if v, err := r.ReadUint32(); err != nil {
+		v, err = r.ReadUint32()
+		if err != nil {
 			return nil, sizeConsumed, err
-		} else {
-			sizeConsumed += 4
-			how.CreateMode = v
 		}
+		sizeConsumed += 4
+		how.CreateMode = v
 
 		switch how.CreateMode {
 		case nfs.UNCHECKED4, nfs.GUARDED4:
 			attr := &nfs.FAttr4{}
-			if size, err := r.ReadAs(attr); err != nil {
+			size, err = r.ReadAs(attr)
+			if err != nil {
 				return nil, sizeConsumed, err
-			} else {
-				sizeConsumed += size
 			}
+			sizeConsumed += size
 			how.CreateAttrs = attr
-			break
+
 		case nfs.EXCLUSIVE4:
 			verf := uint64(0)
-			if size, err := r.ReadAs(&verf); err != nil {
+			size, err = r.ReadAs(&verf)
+			if err != nil {
 				return nil, sizeConsumed, err
-			} else {
-				sizeConsumed += size
 			}
+			sizeConsumed += size
 			how.CreateVerf = verf
-			break
+
 		default:
 			return nil, sizeConsumed, fmt.Errorf(
-				"Unexpected createmode: %v",
+				"unexpected createmode: %v",
 				how.CreateMode,
 			)
 		}
 
 		args.CreateHow = how
-
-		break
 	}
 
 	// open_claim4
 
 	claim := &nfs.OpenClaim4{}
-
-	if v, err := r.ReadUint32(); err != nil {
+	v, err = r.ReadUint32()
+	if err != nil {
 		return nil, sizeConsumed, err
-	} else {
-		sizeConsumed += 4
-		claim.Claim = v
 	}
+	sizeConsumed += 4
+	claim.Claim = v
 
 	switch claim.Claim {
 	case nfs.CLAIM_NULL:
-		file := ""
-		if size, err := r.ReadAs(&file); err != nil {
+		var file string
+		size, err := r.ReadAs(&file)
+		if err != nil {
 			return nil, sizeConsumed, err
-		} else {
-			sizeConsumed += size
-			claim.File = file
 		}
-		break
+		sizeConsumed += size
+		claim.File = file
+
 	case nfs.CLAIM_PREVIOUS:
 		delegateTyp, err := r.ReadUint32()
 		if err != nil {
 			return nil, sizeConsumed, err
 		}
 		claim.DelegateType = delegateTyp
-		break
+
 	case nfs.CLAIM_DELEGATE_CUR:
 		curInfo := &nfs.OpenClaimDelegateCur4{}
-		if size, err := r.ReadAs(curInfo); err != nil {
+		size, err = r.ReadAs(curInfo)
+		if err != nil {
 			return nil, sizeConsumed, err
-		} else {
-			sizeConsumed += size
-			claim.DelegateCurInfo = curInfo
 		}
-		break
+		sizeConsumed += size
+		claim.DelegateCurInfo = curInfo
+
 	case nfs.CLAIM_DELEGATE_PREV:
-		prev := ""
-		if size, err := r.ReadAs(&prev); err != nil {
+		var prev string
+		size, err = r.ReadAs(&prev)
+		if err != nil {
 			return nil, sizeConsumed, err
-		} else {
-			sizeConsumed += size
-			claim.FileDelegatePrev = prev
 		}
-		break
+		sizeConsumed += size
+		claim.FileDelegatePrev = prev
+
 	default:
-		return nil, sizeConsumed, fmt.Errorf("Invalid claim: %v", claim.Claim)
+		return nil, sizeConsumed, fmt.Errorf("invalid claim: %v", claim.Claim)
 	}
 
 	args.Claim = claim
-
 	return args, sizeConsumed, nil
 }
 
@@ -179,13 +174,12 @@ func open(x nfs.RPCContext, args *nfs.OPEN4args) (*nfs.ResGenericRaw, error) {
 				return resFail500, nil
 			}
 			decAttrs = attr
-			break
+
 		case nfs.GUARDED4:
 			// raise NFS4ERR_EXIST if target exists.
 			raiseWhenExists = true
-			break
 		case nfs.EXCLUSIVE4:
-			break
+			// Nothing to do here.
 		default:
 			return &nfs.ResGenericRaw{Status: nfs.NFS4ERR_NOTSUPP}, nil
 		}
@@ -241,7 +235,7 @@ func open(x nfs.RPCContext, args *nfs.OPEN4args) (*nfs.ResGenericRaw, error) {
 	if createNew {
 		flag := os.O_CREATE | os.O_RDWR | os.O_TRUNC
 
-		mode := os.FileMode(0644)
+		mode := os.FileMode(0o644)
 		if decAttrs != nil && decAttrs.Mode != nil {
 			mode = os.FileMode(*decAttrs.Mode)
 		}

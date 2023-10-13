@@ -3,12 +3,14 @@ package server
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"net"
+
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
 	"github.com/smallfz/libnfs-go/xdr"
-	"io"
-	"net"
 )
 
 type SessionMux interface {
@@ -57,7 +59,6 @@ func (sess *Session) Start(ctx context.Context) error {
 	reader := xdr.NewReader(conn)
 
 	for {
-
 		frag, err := reader.ReadUint32()
 		if err != nil {
 			if err == io.EOF {
@@ -66,7 +67,7 @@ func (sess *Session) Start(ctx context.Context) error {
 		}
 
 		if frag&(1<<31) == 0 {
-			return fmt.Errorf("(!)ignored: fragmented request")
+			return errors.New("(!)ignored: fragmented request")
 		}
 
 		headerSize := (frag << 1) >> 1
@@ -80,7 +81,7 @@ func (sess *Session) Start(ctx context.Context) error {
 		}
 
 		if header.MsgType != nfs.RPC_CALL {
-			return fmt.Errorf("Expecting a rpc call message.")
+			return errors.New("expecting a rpc call message")
 		}
 
 		// log.Infof("header: %v", header)
@@ -98,7 +99,6 @@ func (sess *Session) Start(ctx context.Context) error {
 				fs:     vfs,
 				stat:   stat,
 			}
-			break
 
 		case 3:
 			mux = &Mux{
@@ -107,7 +107,6 @@ func (sess *Session) Start(ctx context.Context) error {
 				fs:     vfs,
 				stat:   stat,
 			}
-			break
 
 		default:
 			seq := []interface{}{
@@ -126,7 +125,6 @@ func (sess *Session) Start(ctx context.Context) error {
 					return err
 				}
 			}
-			break
 		}
 
 		if mux != nil {
@@ -136,7 +134,7 @@ func (sess *Session) Start(ctx context.Context) error {
 				restSize -= size
 			}
 		} else {
-			return fmt.Errorf("Invalid rpc message: no suitable mux.")
+			return errors.New("invalid rpc message: no suitable mux")
 		}
 
 		if err := sess.sendResponse(buff.Bytes()); err != nil {
@@ -150,11 +148,8 @@ func (sess *Session) Start(ctx context.Context) error {
 					return nil
 				}
 			}
-			restSize = 0
 		}
 	}
-
-	return nil
 }
 
 func handleSession(ctx context.Context, backend nfs.Backend, conn net.Conn) error {

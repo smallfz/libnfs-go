@@ -4,13 +4,14 @@ package memfs
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/smallfz/libnfs-go/fs"
-	"github.com/smallfz/libnfs-go/log"
 	"io"
 	"os"
 	"path"
 	"sync"
 	"time"
+
+	"github.com/smallfz/libnfs-go/fs"
+	"github.com/smallfz/libnfs-go/log"
 )
 
 const (
@@ -113,8 +114,9 @@ func (n *memFsNode) removeChild(name string) (*memFsNode, bool) {
 // -----
 
 type MemFS struct {
-	store fs.Storage
-	root  *memFsNode
+	store      fs.Storage
+	root       *memFsNode
+	attributes fs.Attributes
 
 	fileId uint64
 	lck    *sync.RWMutex
@@ -129,9 +131,16 @@ func NewMemFS() *MemFS {
 			id:    1000,
 			name:  "",
 			isDir: true,
-			perm:  os.FileMode(0755),
+			perm:  os.FileMode(0o755),
 			cTime: time.Now(),
 			mTime: time.Now(),
+		},
+		attributes: fs.Attributes{
+			LinkSupport:     true,
+			SymlinkSupport:  false, // unsopported
+			ChownRestricted: true,  // unsopported
+			MaxName:         255,   // common value
+			NoTrunc:         false,
 		},
 	}
 }
@@ -209,7 +218,7 @@ func (s *MemFS) writeNode(n *memFsNode, dat []byte) {
 }
 
 func (s *MemFS) Open(name string) (fs.File, error) {
-	return s.OpenFile(name, os.O_RDONLY, os.FileMode(0644))
+	return s.OpenFile(name, os.O_RDONLY, os.FileMode(0o644))
 }
 
 func (s *MemFS) OpenFile(name string, flag int, perm os.FileMode) (fs.File, error) {
@@ -289,7 +298,6 @@ func (s *MemFS) OpenFile(name string, flag int, perm os.FileMode) (fs.File, erro
 		// log.Printf("MemFS.OpenFile: writing %d bytes.", len(dat))
 		s.writeNode(n, dat)
 	}), nil
-
 }
 
 func (s *MemFS) Stat(name string) (fs.FileInfo, error) {
@@ -462,4 +470,28 @@ func (s *MemFS) ResolveHandle(fh []byte) (string, error) {
 	}
 
 	return fs.Abs(fs.Join(parts...)), nil
+}
+
+func (s *MemFS) Chown(name string, uid, gid int) error {
+	log.Warn("TODO: memfs.Chown not implemented")
+	return nil
+}
+
+func (s *MemFS) Link(oldName, newName string) error {
+	log.Warn("TODO: memfs.Link not implemented")
+	return nil
+}
+
+func (s *MemFS) Symlink(oldName, newName string) error {
+	log.Warn("TODO: memfs.Symlink not implemented")
+	return nil
+}
+
+func (s *MemFS) Readlink(name string) (string, error) {
+	log.Warn("TODO: memfs.Readlink not implemented")
+	return name, nil
+}
+
+func (s *MemFS) Attributes() *fs.Attributes {
+	return &s.attributes
 }

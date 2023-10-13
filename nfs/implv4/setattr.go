@@ -1,11 +1,12 @@
 package implv4
 
 import (
+	"io"
+	"os"
+
 	"github.com/smallfz/libnfs-go/fs"
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
-	"io"
-	"os"
 )
 
 func setAttr(x nfs.RPCContext, args *nfs.SETATTR4args) (*nfs.SETATTR4res, error) {
@@ -23,7 +24,7 @@ func setAttr(x nfs.RPCContext, args *nfs.SETATTR4args) (*nfs.SETATTR4res, error)
 			off[id] = false
 		}
 	}
-	for id, _ := range off {
+	for id := range off {
 		if on, found := idxReq[id]; found && on {
 			idxReq[id] = false
 		}
@@ -61,12 +62,6 @@ func setAttr(x nfs.RPCContext, args *nfs.SETATTR4args) (*nfs.SETATTR4res, error)
 		}
 	}
 
-	fi, err := f.Stat()
-	if err != nil {
-		log.Warnf("f.Stat: %v", err)
-		return resFailPerm, nil
-	}
-
 	decAttrs, err := decodeFAttrs4(args.Attrs)
 	if err != nil {
 		return resFailNotSupp, nil
@@ -93,8 +88,25 @@ func setAttr(x nfs.RPCContext, args *nfs.SETATTR4args) (*nfs.SETATTR4res, error)
 			}
 		}
 	}
+	if decAttrs.Owner != "" || decAttrs.OwnerGroup != "" {
+		if vfs.Attributes().ChownRestricted {
+			log.Warn("vfs.Chown: Operation not permitted due to chown_restricted attr")
+			return resFailPerm, nil
+		}
 
-	fi, err = f.Stat()
+		uid, gid, err := chownAttrs(decAttrs.Owner, decAttrs.OwnerGroup)
+		if err != nil {
+			log.Warnf("vfs.Chown(%s, %s, %s): %v", pathName, decAttrs.Owner, decAttrs.OwnerGroup, err)
+			return resFailPerm, nil
+		}
+
+		if err = vfs.Chown(pathName, uid, gid); err != nil {
+			log.Warnf("vfs.Chown(%s, %d, %d): %v", pathName, uid, gid, err)
+			return resFailPerm, err
+		}
+	}
+
+	fi, err := f.Stat()
 	if err != nil {
 		log.Warnf("f.Stat: %v", err)
 		return resFailPerm, nil

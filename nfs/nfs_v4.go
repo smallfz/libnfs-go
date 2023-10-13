@@ -1,9 +1,10 @@
 package nfs
 
 import (
-	// "encoding/hex"
 	"fmt"
 	"io"
+	"io/fs"
+	"os"
 )
 
 const (
@@ -75,6 +76,38 @@ const (
 	NFS4ERR_ADMIN_REVOKED       = uint32(10047) /* lock-owner state revoked */
 	NFS4ERR_CB_PATH_DOWN        = uint32(10048) /* callback path down       */
 )
+
+func NFS4err(err error) uint32 {
+	switch err {
+	case nil:
+		return NFS4_OK
+	case fs.ErrPermission:
+		return NFS4ERR_PERM
+	case fs.ErrNotExist:
+		return NFS4ERR_NOENT
+	case fs.ErrExist:
+		return NFS4ERR_EXIST
+	case fs.ErrClosed:
+		return NFS4ERR_IO
+	}
+
+	// Handle syscall errors
+
+	if os.IsNotExist(err) {
+		return NFS4ERR_NOENT
+	}
+
+	if os.IsExist(err) {
+		return NFS4ERR_EXIST
+	}
+
+	if os.IsPermission(err) {
+		return NFS4ERR_PERM
+	}
+
+	// os.LinkError
+	return NFS4ERR_PERM
+}
 
 const (
 	PROC4_VOID     = uint32(0)
@@ -367,8 +400,7 @@ type LOOKUP4res struct {
 	Status uint32
 }
 
-type GETFH4args struct {
-}
+type GETFH4args struct{}
 
 type GETFH4resok struct {
 	Fh FileHandle4 // nfs_fh4
@@ -816,4 +848,41 @@ type SAVEFH4res struct {
 
 type RESTOREFH4res struct {
 	Status uint32
+}
+
+type RENAME4args struct {
+	OldName string
+	NewName string
+}
+
+type RENAME4resok struct {
+	SourceCInfo *ChangeInfo4
+	TargetCInfo *ChangeInfo4
+}
+
+type RENAME4res struct {
+	Status uint32
+	Ok     *RENAME4resok
+}
+
+type LINK4args struct {
+	NewName string
+}
+
+type LINK4resok struct {
+	CInfo *ChangeInfo4
+}
+
+type LINK4res struct {
+	Status uint32
+	Ok     *LINK4resok
+}
+
+type READLINK4resok struct {
+	Link string
+}
+
+type READLINK4res struct {
+	Status uint32
+	Ok     *READLINK4resok
 }

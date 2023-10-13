@@ -1,13 +1,9 @@
 package implv4
 
 import (
-	// "bytes"
-	// "fmt"
-	// "libnfs-go/fs"
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
 	"github.com/smallfz/libnfs-go/xdr"
-	// "os"
 )
 
 func readOpOpenDgArgs(r *xdr.Reader) (*nfs.OPENDG4args, int, error) {

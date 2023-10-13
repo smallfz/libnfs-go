@@ -34,6 +34,10 @@ type FS interface {
 	OpenFile(string, int, os.FileMode) (File, error)
 	Stat(string) (FileInfo, error)
 	Chmod(string, os.FileMode) error
+	Chown(string, int, int) error
+	Symlink(string, string) error
+	Readlink(string) (string, error)
+	Link(string, string) error
 	Rename(string, string) error
 	Remove(string) error
 	MkdirAll(string, os.FileMode) error
@@ -49,6 +53,9 @@ type FS interface {
 
 	// ResolveHandle translate the giving handle to full path of the corresponding file.
 	ResolveHandle([]byte) (string, error)
+
+	// Attributes returns the FS' attributes that can be edited.
+	Attributes() *Attributes
 }
 
 type FSWithId interface {
@@ -59,4 +66,13 @@ type FSWithId interface {
 type AllowLink interface {
 	Lstat(string) (FileInfo, error)
 	Symlink(string, string) error
+}
+
+// https://datatracker.ietf.org/doc/html/rfc7530#section-5.6
+type Attributes struct {
+	LinkSupport     bool   // id: 5
+	SymlinkSupport  bool   // id: 6
+	ChownRestricted bool   // id: 18
+	MaxName         uint32 // id: 29
+	NoTrunc         bool   // id: 34
 }

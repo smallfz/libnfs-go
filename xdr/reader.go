@@ -2,9 +2,11 @@ package xdr
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+
 	// "libnfs-go/log"
 	"math"
 	"reflect"
@@ -95,12 +97,12 @@ func (r *Reader) ReadUint32() (uint32, error) {
 
 func (r *Reader) ReadValue(v reflect.Value) (int, error) {
 	if !v.IsValid() {
-		return 0, fmt.Errorf("invalid target.")
+		return 0, errors.New("invalid target")
 	}
 
 	kind := v.Kind()
 	if kind != reflect.Ptr {
-		return 0, fmt.Errorf("ReadAs: expects a ptr target.")
+		return 0, errors.New("ReadAs: expects a ptr target")
 	}
 
 	kind = v.Elem().Kind()
@@ -168,7 +170,7 @@ func (r *Reader) ReadValue(v reflect.Value) (int, error) {
 			v.Elem().Set(v1)
 			return size, nil
 		}
-		return size, fmt.Errorf("unable to assign %T to %s.", iv, kind)
+		return size, fmt.Errorf("unable to assign %T to %s", iv, kind)
 
 	case reflect.Int64, reflect.Uint64:
 		// todo: convert to xdr.b8
@@ -188,7 +190,7 @@ func (r *Reader) ReadValue(v reflect.Value) (int, error) {
 			v.Elem().Set(v1)
 			return size, nil
 		}
-		return size, fmt.Errorf("unable to assign %T to %s.", iv, kind)
+		return size, fmt.Errorf("unable to assign %T to %s", iv, kind)
 
 	case reflect.Array:
 		// fixed length array
@@ -309,7 +311,6 @@ func (r *Reader) ReadValue(v reflect.Value) (int, error) {
 				if fv.IsNil() {
 					pToFv = reflect.New(fv.Type())
 				}
-				break
 			}
 
 			if size, err := r.ReadValue(pToFv); err != nil {
@@ -324,10 +325,8 @@ func (r *Reader) ReadValue(v reflect.Value) (int, error) {
 		return sizeConsumed, nil
 
 	default:
-		return 0, fmt.Errorf("Type not supported: %s.", kind)
-
+		return 0, fmt.Errorf("type not supported: %s", kind)
 	}
-	return 0, nil
 }
 
 func (r *Reader) ReadAs(target interface{}) (int, error) {

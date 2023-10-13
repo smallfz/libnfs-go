@@ -1,9 +1,10 @@
 package implv4
 
 import (
+	"path"
+
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
-	"path"
 )
 
 func remove(x nfs.RPCContext, args *nfs.REMOVE4args) (*nfs.REMOVE4res, error) {
@@ -21,9 +22,14 @@ func remove(x nfs.RPCContext, args *nfs.REMOVE4args) (*nfs.REMOVE4res, error) {
 
 	pathName := path.Join(folder, args.Target)
 
-	_, err = vfs.Stat(pathName)
+	fi, err := vfs.Stat(pathName)
 	if err != nil {
 		log.Warnf("  remove: vfs.Stat(%s): %v", pathName, err)
+	}
+
+	if fi.IsDir() && fi.NumLinks() > 2 {
+		// Should not be able to remove an non-empty directory (more than 2 numlinks).
+		return &nfs.REMOVE4res{Status: nfs.NFS3ERR_NOTEMPTY}, nil
 	}
 
 	if err := vfs.Remove(pathName); err != nil {
