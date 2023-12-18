@@ -12,8 +12,6 @@ import (
 )
 
 func main() {
-	defer log.Sync()
-
 	listen := ":2049"
 	flag.StringVar(&listen, "l", listen, "Server listen address")
 	flag.Parse()

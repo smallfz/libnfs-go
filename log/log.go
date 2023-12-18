@@ -1,89 +1,103 @@
 package log
 
-import (
-	"fmt"
-	"os"
-	"time"
+var defaultLogger Logger = &LoggerBuiltin{
+	Lev: NOTSET,
+	Handlers: []Handler{
+		DefaultHandler(),
+	},
+}
 
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-)
+func Level() int {
+	return defaultLogger.Level()
+}
 
-const (
-	TRACE = zerolog.TraceLevel
-	DEBUG = zerolog.DebugLevel
-	INFO  = zerolog.InfoLevel
-	WARN  = zerolog.WarnLevel
-	ERROR = zerolog.ErrorLevel
-)
+func UpdateLevel(level int) {
+	defaultLogger.SetLevel(level)
+}
 
-func init() {
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	zerolog.TimeFieldFormat = time.RFC3339
+func SetLevel(level int) {
+	defaultLogger.SetLevel(level)
+}
 
-	writer := zerolog.ConsoleWriter{
-		Out:        os.Stdout,
-		TimeFormat: time.RFC3339,
+func SetLevelName(levelName string) {
+	lev := GetLevel(levelName)
+	defaultLogger.SetLevel(lev)
+}
+
+func Print(v ...interface{}) {
+	defaultLogger.Print(NOTSET, v...)
+}
+
+func Printf(format string, v ...interface{}) {
+	defaultLogger.Printf(NOTSET, format, v...)
+}
+
+func Println(v ...interface{}) {
+	defaultLogger.Println(NOTSET, v...)
+}
+
+func Debug(v ...interface{}) {
+	defaultLogger.Debug(v...)
+}
+
+func Debugf(format string, v ...interface{}) {
+	defaultLogger.Debugf(format, v...)
+}
+
+func Error(v ...interface{}) {
+	defaultLogger.Error(v...)
+}
+
+func Errorf(format string, v ...interface{}) {
+	defaultLogger.Errorf(format, v...)
+}
+
+func Warning(v ...interface{}) {
+	defaultLogger.Warning(v...)
+}
+
+func Warningf(format string, v ...interface{}) {
+	defaultLogger.Warningf(format, v...)
+}
+
+func Warn(v ...interface{}) {
+	defaultLogger.Warn(v...)
+}
+
+func Warnf(format string, v ...interface{}) {
+	defaultLogger.Warnf(format, v...)
+}
+
+func Info(v ...interface{}) {
+	defaultLogger.Info(v...)
+}
+
+func Infof(format string, v ...interface{}) {
+	defaultLogger.Infof(format, v...)
+}
+
+// ----
+
+func SetLoggerDefault(l Logger) {
+	defaultLogger = l
+}
+
+func GetLoggerDefault() Logger {
+	return defaultLogger
+}
+
+func GetLogger(name string) Logger {
+	return NewLogger(name, NOTSET, DefaultHandler())
+}
+
+func NewLogger(name string, level int, handler Handler) Logger {
+	handlers := []Handler{}
+	if handler != nil {
+		handlers = append(handlers, handler)
 	}
-	logger := log.Output(writer)
-	log.Logger = logger
-}
-
-func UpdateLevel(level zerolog.Level) {
-	zerolog.SetGlobalLevel(level)
-}
-
-func Debug(args ...interface{}) {
-	log.Debug().Msg(fmt.Sprint(args...))
-}
-
-func Debugf(t string, args ...interface{}) {
-	log.Debug().Msgf(t, args...)
-}
-
-func Fatal(args ...interface{}) {
-	log.Fatal().Msg(fmt.Sprint(args...))
-}
-
-func Fatalf(t string, args ...interface{}) {
-	log.Fatal().Msgf(t, args...)
-}
-
-func Error(args ...interface{}) {
-	log.Error().Msg(fmt.Sprint(args...))
-}
-
-func Errorf(t string, args ...interface{}) {
-	log.Error().Msgf(t, args...)
-}
-
-func Info(args ...interface{}) {
-	log.Info().Msg(fmt.Sprint(args...))
-}
-
-func Infof(t string, args ...interface{}) {
-	log.Info().Msgf(t, args...)
-}
-
-func Warn(args ...interface{}) {
-	log.Warn().Msg(fmt.Sprint(args...))
-}
-
-func Warnf(t string, args ...interface{}) {
-	log.Warn().Msgf(t, args...)
-}
-
-func Println(args ...interface{}) {
-	log.Log().Msg(fmt.Sprintln(args...))
-}
-
-func Print(args ...interface{}) {
-	log.Log().Msg(fmt.Sprint(args...))
-}
-
-func Printf(t string, args ...interface{}) {
-	log.Log().Msgf(t, args...)
-}
-
-func Sync() {
+	return &LoggerBuiltin{
+		Lev:      level,
+		Name:     name,
+		Handlers: handlers,
+	}
 }
