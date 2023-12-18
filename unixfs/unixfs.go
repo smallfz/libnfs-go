@@ -230,6 +230,8 @@ func (s *UnixFS) GetFileId(fi fs.FileInfo) uint64 {
 	switch i := fi.(type) {
 	case *FileInfo:
 		return i.Inode()
+	case fs.WithId:
+		return i.Id()
 	default:
 		return InvalidID
 	}
