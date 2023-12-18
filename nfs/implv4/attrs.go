@@ -342,13 +342,17 @@ func fileInfoToAttrs(vfs fs.FS, pathName string, fi fs.FileInfo, attrsRequest ma
 
 		case A_type:
 			v := nfs.NF4REG
-			switch fi.Mode().Type() {
-			case os.ModeDir:
+			if fi.IsDir() {
 				v = nfs.NF4DIR
-			case os.ModeSymlink:
-				v = nfs.NF4LNK
-			case os.ModeSocket:
-				v = nfs.NF4SOCK
+			} else {
+				switch fi.Mode().Type() {
+				case os.ModeDir:
+					v = nfs.NF4DIR
+				case os.ModeSymlink:
+					v = nfs.NF4LNK
+				case os.ModeSocket:
+					v = nfs.NF4SOCK
+				}
 			}
 			writeAny(a, v, 4)
 
