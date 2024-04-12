@@ -12,6 +12,7 @@ import (
 type Muxv4 struct {
 	reader *xdr.Reader
 	writer *xdr.Writer
+	auth   nfs.AuthenticationHandler
 	fs     fs.FS
 	stat   nfs.StatService
 }
@@ -24,6 +25,16 @@ func (x *Muxv4) Writer() *xdr.Writer {
 	return x.writer
 }
 
+func (x *Muxv4) Authenticate(cred, verf *nfs.Auth) (*nfs.Auth, error) {
+	resp, creds, err := x.auth(cred, verf)
+
+	if err != nil {
+		x.fs.SetCreds(creds)
+	}
+
+	return resp, err
+}
+
 func (x *Muxv4) Stat() nfs.StatService {
 	return x.stat
 }
@@ -33,6 +44,8 @@ func (x *Muxv4) GetFS() fs.FS {
 }
 
 func (x *Muxv4) HandleProc(h *nfs.RPCMsgCall) (int, error) {
+	// Clear authentication
+
 	switch h.Proc {
 	case nfs.PROC4_VOID:
 		return v4.Void(h, x)

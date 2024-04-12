@@ -7,6 +7,13 @@ import (
 	"time"
 )
 
+type Creds interface {
+	Host() string
+	Uid() uint32
+	Gid() uint32
+	Groups() []uint32
+}
+
 type FileInfo interface {
 	os.FileInfo
 	ATime() time.Time
@@ -30,6 +37,9 @@ type WithId interface {
 
 // FS is the most essential interface that need to be implemeted in a derived nfs server.
 type FS interface {
+	// SetCreds is called before all other methods to indicate the credentials of the client.
+	SetCreds(Creds)
+
 	Open(string) (File, error)
 	OpenFile(string, int, os.FileMode) (File, error)
 	Stat(string) (FileInfo, error)

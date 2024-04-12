@@ -40,6 +40,8 @@ func New(workdir string) (*UnixFS, error) {
 	}, nil
 }
 
+func (s *UnixFS) SetCreds(creds fs.Creds) {}
+
 func (s *UnixFS) Attributes() *fs.Attributes {
 	return &s.attributes
 }

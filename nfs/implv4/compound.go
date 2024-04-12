@@ -8,33 +8,8 @@ import (
 )
 
 func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
-	w := ctx.Writer()
-
-	rh := &nfs.RPCMsgReply{
-		Xid:       h.Xid,
-		MsgType:   nfs.RPC_REPLY,
-		ReplyStat: nfs.ACCEPT_SUCCESS,
-	}
-	if _, err := w.WriteAny(rh); err != nil {
-		return 0, err
-	}
-
-	auth := &nfs.Auth{
-		Flavor: nfs.AUTH_FLAVOR_NULL,
-		Body:   []byte{},
-	}
-	if _, err := w.WriteAny(auth); err != nil {
-		return 0, err
-	}
-
-	acceptStat := nfs.ACCEPT_SUCCESS
-	if _, err := w.WriteUint32(acceptStat); err != nil {
-		return 0, err
-	}
-
-	// ---- proc ----
-
 	r, w := ctx.Reader(), ctx.Writer()
+
 	sizeConsumed := 0
 
 	tag := ""
@@ -57,6 +32,236 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 	} else {
 		sizeConsumed += size
 	}
+
+	resp, err := ctx.Authenticate(h.Cred, h.Verf)
+	if authErr, ok := err.(*nfs.AuthError); ok {
+		rh := &nfs.RPCMsgReply{
+			Xid:       h.Xid,
+			MsgType:   nfs.RPC_REPLY,
+			ReplyStat: nfs.MSG_DENIED,
+		}
+
+		if _, err := w.WriteAny(rh); err != nil {
+			return sizeConsumed, err
+		}
+
+		if _, err := w.WriteUint32(nfs.REJECT_AUTH_ERROR); err != nil {
+			return sizeConsumed, err
+		}
+
+		if _, err := w.WriteUint32(authErr.Code); err != nil {
+			return sizeConsumed, err
+		}
+
+		// Discard all input
+		for i := uint32(0); i < opsCnt; i++ {
+			opnum4 := uint32(0)
+			if size, err := r.ReadAs(&opnum4); err != nil {
+				return sizeConsumed, err
+			} else {
+				sizeConsumed += size
+			}
+
+			switch opnum4 {
+			case nfs.OP4_SETCLIENTID:
+				args := &nfs.SETCLIENTID4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_SETCLIENTID_CONFIRM:
+				args := &nfs.SETCLIENTID_CONFIRM4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_EXCHANGE_ID:
+				args := &nfs.EXCHANGE_ID4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_PUTROOTFH:
+			case nfs.OP4_GETATTR:
+				args := &nfs.GETATTR4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_PUTFH:
+				args := &nfs.PUTFH4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_GETFH:
+			case nfs.OP4_LOOKUP:
+				args := &nfs.LOOKUP4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_ACCESS:
+				args := &nfs.ACCESS4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_READDIR:
+				args := &nfs.READDIR4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_SECINFO:
+				args := &nfs.SECINFO4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_RENEW:
+				args := &nfs.RENEW4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_CREATE:
+				// rfc7530, 16.4.2
+				_, size, err := readOpCreateArgs(r)
+				if err != nil {
+					return sizeConsumed, err
+				}
+				sizeConsumed += size
+
+			case nfs.OP4_OPEN:
+				_, size, err := readOpOpenArgs(r)
+				if err != nil {
+					return sizeConsumed, err
+				}
+				sizeConsumed += size
+
+			case nfs.OP4_OPEN_DOWNGRADE:
+				_, size, err := readOpOpenDgArgs(r)
+				if err != nil {
+					return sizeConsumed, err
+				}
+				sizeConsumed += size
+
+			case nfs.OP4_CLOSE:
+				args := &nfs.CLOSE4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_SETATTR:
+				args := &nfs.SETATTR4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_REMOVE:
+				args := &nfs.REMOVE4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_COMMIT:
+				args := &nfs.COMMIT4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_WRITE:
+				args := &nfs.WRITE4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_READ:
+				args := &nfs.READ4args{}
+				if size, err := r.ReadAs(args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_SAVEFH:
+			case nfs.OP4_RESTOREFH:
+			case nfs.OP4_RENAME:
+				var args nfs.RENAME4args
+				if size, err := r.ReadAs(&args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_LINK:
+				var args nfs.LINK4args
+				if size, err := r.ReadAs(&args); err != nil {
+					return sizeConsumed, err
+				} else {
+					sizeConsumed += size
+				}
+
+			case nfs.OP4_READLINK:
+			default:
+				log.Warnf("op not handled: %d.", opnum4)
+				w.WriteUint32(nfs.NFS4ERR_OP_ILLEGAL)
+				return sizeConsumed, nil
+			}
+		}
+	} else if err != nil {
+		return 0, err
+	}
+
+	rh := &nfs.RPCMsgReply{
+		Xid:       h.Xid,
+		MsgType:   nfs.RPC_REPLY,
+		ReplyStat: nfs.MSG_ACCEPTED,
+	}
+	if _, err := w.WriteAny(rh); err != nil {
+		return 0, err
+	}
+
+	if _, err := w.WriteAny(resp); err != nil {
+		return 0, err
+	}
+
+	if _, err := w.WriteUint32(nfs.ACCEPT_SUCCESS); err != nil {
+		return 0, err
+	}
+
+	// ---- proc ----
 
 	log.Debugf("---------- compound proc (%d ops) ----------", opsCnt)
 

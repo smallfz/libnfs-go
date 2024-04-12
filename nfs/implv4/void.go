@@ -10,7 +10,7 @@ func Void(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 	rh := &nfs.RPCMsgReply{
 		Xid:       h.Xid,
 		MsgType:   nfs.RPC_REPLY,
-		ReplyStat: nfs.ACCEPT_SUCCESS,
+		ReplyStat: nfs.MSG_ACCEPTED,
 	}
 	if _, err := w.WriteAny(rh); err != nil {
 		return 0, err

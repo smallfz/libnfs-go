@@ -6,8 +6,9 @@ import (
 )
 
 type backendSession struct {
-	vfs  fs.FS
-	stat *Stat
+	vfs            fs.FS
+	stat           *Stat
+	authentication nfs.AuthenticationHandler
 }
 
 func (s *backendSession) Close() error {
@@ -15,6 +16,10 @@ func (s *backendSession) Close() error {
 		s.stat.CleanUp()
 	}
 	return nil
+}
+
+func (s *backendSession) Authentication() nfs.AuthenticationHandler {
+	return s.authentication
 }
 
 func (s *backendSession) GetFS() fs.FS {
@@ -26,14 +31,22 @@ func (s *backendSession) GetStatService() nfs.StatService {
 }
 
 type Backend struct {
-	vfs fs.FS
+	vfsLoader      func() fs.FS
+	authentication nfs.AuthenticationHandler
 }
 
 // New creates a new Backend instance.
-func New(vfs fs.FS) *Backend {
-	return &Backend{vfs: vfs}
+func New(vfsLoader func() fs.FS, authentication nfs.AuthenticationHandler) *Backend {
+	return &Backend{
+		vfsLoader:      vfsLoader,
+		authentication: authentication,
+	}
 }
 
 func (b *Backend) CreateSession(state nfs.SessionState) nfs.BackendSession {
-	return &backendSession{vfs: b.vfs, stat: new(Stat)}
+	return &backendSession{
+		vfs:            b.vfsLoader(),
+		stat:           new(Stat),
+		authentication: b.authentication,
+	}
 }
