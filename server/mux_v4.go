@@ -28,7 +28,7 @@ func (x *Muxv4) Writer() *xdr.Writer {
 func (x *Muxv4) Authenticate(cred, verf *nfs.Auth) (*nfs.Auth, error) {
 	resp, creds, err := x.auth(cred, verf)
 
-	if err != nil {
+	if err == nil {
 		x.fs.SetCreds(creds)
 	}
 
