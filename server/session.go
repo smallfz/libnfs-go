@@ -53,6 +53,7 @@ func (sess *Session) Start(ctx context.Context) error {
 	backendSession := sess.backend.CreateSession(sess)
 	defer backendSession.Close()
 
+	auth := backendSession.Authentication()
 	vfs := backendSession.GetFS()
 	stat := backendSession.GetStatService()
 
@@ -96,6 +97,7 @@ func (sess *Session) Start(ctx context.Context) error {
 			mux = &Muxv4{
 				reader: reader,
 				writer: writer,
+				auth:   auth,
 				fs:     vfs,
 				stat:   stat,
 			}
@@ -104,6 +106,7 @@ func (sess *Session) Start(ctx context.Context) error {
 			mux = &Mux{
 				reader: reader,
 				writer: writer,
+				auth:   auth,
 				fs:     vfs,
 				stat:   stat,
 			}

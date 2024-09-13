@@ -12,6 +12,7 @@ import (
 type Mux struct {
 	reader *xdr.Reader
 	writer *xdr.Writer
+	auth   nfs.AuthenticationHandler
 	fs     fs.FS
 	stat   nfs.StatService
 }
@@ -22,6 +23,16 @@ func (x *Mux) Reader() *xdr.Reader {
 
 func (x *Mux) Writer() *xdr.Writer {
 	return x.writer
+}
+
+func (x *Mux) Authenticate(cred, verf *nfs.Auth) (*nfs.Auth, error) {
+	resp, creds, err := x.auth(cred, verf)
+
+	if err == nil {
+		x.fs.SetCreds(creds)
+	}
+
+	return resp, err
 }
 
 func (x *Mux) Stat() nfs.StatService {

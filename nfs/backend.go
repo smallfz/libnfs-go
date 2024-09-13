@@ -12,6 +12,8 @@ type SessionState interface {
 	Conn() net.Conn
 }
 
+type AuthenticationHandler func(*Auth, *Auth) (*Auth, fs.Creds, error)
+
 type StatService interface {
 	// Cwd() string
 	// SetCwd(string) error
@@ -41,7 +43,11 @@ type StatService interface {
 
 // BackendSession has a lifetime exact as the client connection.
 type BackendSession interface {
+	// Authentication should return an Authentication handler.
+	Authentication() AuthenticationHandler
+
 	// GetFS should return a FS implementation.
+	// The backend should cache
 	GetFS() fs.FS
 
 	// GetStatService returns a StateService in implementation.

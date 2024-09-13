@@ -217,6 +217,8 @@ func (s *MemFS) writeNode(n *memFsNode, dat []byte) {
 	n.size = int64(s.store.Size(n.nodeId))
 }
 
+func (s *MemFS) SetCreds(creds fs.Creds) {}
+
 func (s *MemFS) Open(name string) (fs.File, error) {
 	return s.OpenFile(name, os.O_RDONLY, os.FileMode(0o644))
 }

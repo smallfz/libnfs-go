@@ -49,6 +49,19 @@ type Auth struct {
 	Body   []byte
 }
 
+type AuthError struct {
+	Code uint32
+}
+
+func (err *AuthError) Error() string {
+	return fmt.Sprintf("auth error: %d", err.Code)
+}
+
+var (
+	ErrBadCredentials = &AuthError{Code: AUTH_BADCRED}
+	ErrTooWeak        = &AuthError{Code: AUTH_TOOWEAK}
+)
+
 func NewEmptyAuth() *Auth {
 	return &Auth{Flavor: 0, Body: []byte{}}
 }

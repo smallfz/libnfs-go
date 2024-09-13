@@ -1,9 +1,10 @@
 package implv3
 
 import (
+	"time"
+
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/nfs"
-	"time"
 )
 
 func PathConf(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
@@ -21,25 +22,45 @@ func PathConf(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 
 	log.Infof("pathconf: path = %s", string(fh3))
 
+	resp, err := ctx.Authenticate(h.Cred, h.Verf)
+	if authErr, ok := err.(*nfs.AuthError); ok {
+		rh := &nfs.RPCMsgReply{
+			Xid:       h.Xid,
+			MsgType:   nfs.RPC_REPLY,
+			ReplyStat: nfs.MSG_DENIED,
+		}
+
+		if _, err := w.WriteAny(rh); err != nil {
+			return sizeConsumed, err
+		}
+
+		if _, err := w.WriteUint32(nfs.REJECT_AUTH_ERROR); err != nil {
+			return sizeConsumed, err
+		}
+
+		if _, err := w.WriteUint32(authErr.Code); err != nil {
+			return sizeConsumed, err
+		}
+
+		return sizeConsumed, nil
+	} else if err != nil {
+		return sizeConsumed, err
+	}
+
 	rh := &nfs.RPCMsgReply{
 		Xid:       h.Xid,
 		MsgType:   nfs.RPC_REPLY,
-		ReplyStat: nfs.ACCEPT_SUCCESS,
+		ReplyStat: nfs.MSG_ACCEPTED,
 	}
 	if _, err := w.WriteAny(rh); err != nil {
 		return sizeConsumed, err
 	}
 
-	auth := &nfs.Auth{
-		Flavor: nfs.AUTH_FLAVOR_NULL,
-		Body:   []byte{},
-	}
-	if _, err := w.WriteAny(auth); err != nil {
+	if _, err := w.WriteAny(resp); err != nil {
 		return sizeConsumed, err
 	}
 
-	acceptStat := nfs.ACCEPT_SUCCESS
-	if _, err := w.WriteUint32(acceptStat); err != nil {
+	if _, err := w.WriteUint32(nfs.ACCEPT_SUCCESS); err != nil {
 		return sizeConsumed, err
 	}
 

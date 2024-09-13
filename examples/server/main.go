@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/smallfz/libnfs-go/auth"
 	"github.com/smallfz/libnfs-go/backend"
+	"github.com/smallfz/libnfs-go/fs"
 	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/memfs"
 	"github.com/smallfz/libnfs-go/server"
@@ -19,7 +21,10 @@ func main() {
 	log.UpdateLevel(log.DEBUG)
 
 	mfs := memfs.NewMemFS()
-	backend := backend.New(mfs)
+
+	// We don't need to create a new fs for each connection as memfs is opaque towards SetCreds.
+	// If the file system would depend on SetCreds, make sure to generate a new fs.FS for each connection.
+	backend := backend.New(func() fs.FS { return mfs }, auth.Null)
 
 	mfs.MkdirAll("/mount", os.FileMode(0o755))
 	mfs.MkdirAll("/test", os.FileMode(0o755))
