@@ -17,6 +17,8 @@ type Mux struct {
 	stat   nfs.StatService
 }
 
+var _ nfs.RPCContext = (*Mux)(nil)
+
 func (x *Mux) Reader() *xdr.Reader {
 	return x.reader
 }

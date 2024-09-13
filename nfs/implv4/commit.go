@@ -6,7 +6,6 @@ import (
 )
 
 func commit(x nfs.RPCContext, args *nfs.COMMIT4args) (*nfs.COMMIT4res, error) {
-
 	vfs := x.GetFS()
 	fh := x.Stat().CurrentHandle()
 	pathName, err := vfs.ResolveHandle(fh)

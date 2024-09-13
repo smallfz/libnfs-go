@@ -13,15 +13,13 @@ const (
 	NOTSET   = 8
 )
 
-var (
-	idx = map[int]string{
-		CRITICAL: "critical",
-		ERROR:    "error",
-		WARNING:  "warning",
-		INFO:     "info",
-		DEBUG:    "debug",
-	}
-)
+var idx = map[int]string{
+	CRITICAL: "critical",
+	ERROR:    "error",
+	WARNING:  "warning",
+	INFO:     "info",
+	DEBUG:    "debug",
+}
 
 func GetLevelName(lev int) string {
 	if name, found := idx[lev]; found {

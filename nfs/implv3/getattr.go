@@ -108,7 +108,7 @@ func GetAttr(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 
 			attr := nfs.FileAttrs{
 				Type:   ftype,
-				Mode:   uint32(0755),
+				Mode:   uint32(0o755),
 				Size:   uint64(fi.Size()),
 				Used:   uint64(fi.Size()),
 				Rdev:   nfs.SpecData{},

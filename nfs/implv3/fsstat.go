@@ -79,7 +79,7 @@ func FsStat(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			AttributesFollow: true,
 			Attributes: &nfs.FileAttrs{
 				Type:  nfs.FTYPE_NF3DIR,
-				Mode:  uint32(0755),
+				Mode:  uint32(0o755),
 				Size:  capacity,
 				Used:  0,
 				ATime: nfs.MakeNfsTime(now),

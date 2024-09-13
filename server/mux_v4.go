@@ -17,6 +17,8 @@ type Muxv4 struct {
 	stat   nfs.StatService
 }
 
+var _ nfs.RPCContext = (*Muxv4)(nil)
+
 func (x *Muxv4) Reader() *xdr.Reader {
 	return x.reader
 }

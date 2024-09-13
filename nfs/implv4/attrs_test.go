@@ -2,8 +2,9 @@ package implv4
 
 import (
 	"encoding/json"
-	"github.com/smallfz/libnfs-go/log"
 	"testing"
+
+	"github.com/smallfz/libnfs-go/log"
 )
 
 func TestFAttr4Decoding(t *testing.T) {

@@ -25,6 +25,7 @@ func remove(x nfs.RPCContext, args *nfs.REMOVE4args) (*nfs.REMOVE4res, error) {
 	fi, err := vfs.Stat(pathName)
 	if err != nil {
 		log.Warnf("  remove: vfs.Stat(%s): %v", pathName, err)
+		return &nfs.REMOVE4res{Status: nfs.NFS4ERR_PERM}, nil
 	}
 
 	if fi.IsDir() && fi.NumLinks() > 2 {

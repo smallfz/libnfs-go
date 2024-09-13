@@ -85,7 +85,7 @@ func Access(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 			AttributesFollow: true,
 			Attributes: &nfs.FileAttrs{
 				Type:  nfs.FTYPE_NF3DIR,
-				Mode:  uint32(0777),
+				Mode:  uint32(0o777),
 				Size:  0,
 				Used:  0,
 				ATime: nfs.MakeNfsTime(now),
