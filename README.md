@@ -19,38 +19,49 @@ To give it a try:
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
+	"github.com/smallfz/libnfs-go/auth"
 	"github.com/smallfz/libnfs-go/backend"
+	"github.com/smallfz/libnfs-go/fs"
+	"github.com/smallfz/libnfs-go/log"
 	"github.com/smallfz/libnfs-go/memfs"
 	"github.com/smallfz/libnfs-go/server"
 )
 
 func main() {
+	listen := ":2049"
+	flag.StringVar(&listen, "l", listen, "Server listen address")
+	flag.Parse()
+
+	log.UpdateLevel(log.DEBUG)
+
 	mfs := memfs.NewMemFS()
-	backend := backend.New(mfs)
 
-	mfs.MkdirAll("/test", os.FileMode(0755))
-	mfs.MkdirAll("/test2", os.FileMode(0755))
-	mfs.MkdirAll("/many", os.FileMode(0755))
+	// We don't need to create a new fs for each connection as memfs is opaque towards SetCreds.
+	// If the file system would depend on SetCreds, make sure to generate a new fs.FS for each connection.
+	backend := backend.New(func() fs.FS { return mfs }, auth.Null)
 
-	perm := os.FileMode(0755)
+	mfs.MkdirAll("/mount", os.FileMode(0o755))
+	mfs.MkdirAll("/test", os.FileMode(0o755))
+	mfs.MkdirAll("/test2", os.FileMode(0o755))
+	mfs.MkdirAll("/many", os.FileMode(0o755))
+
+	perm := os.FileMode(0o755)
 	for i := 0; i < 256; i++ {
 		mfs.MkdirAll(fmt.Sprintf("/many/sub-%d", i+1), perm)
 	}
 
-	// TODO: replace the in-memory backend with your own implementation.
-	// ....
-
-	svr, err := server.NewServerTCP(":2049", backend)
+	svr, err := server.NewServerTCP(listen, backend)
 	if err != nil {
-		fmt.Printf("server.NewServerTCP: %v"\n, err)
+		log.Errorf("server.NewServerTCP: %v", err)
 		return
 	}
 
 	if err := svr.Serve(); err != nil {
-		fmt.Printf("svr.Serve: %v\n", err)
+		log.Errorf("svr.Serve: %v", err)
 	}
 }
 ```
@@ -58,11 +69,13 @@ func main() {
 After the server started you can mount the in-memory filesystem to local:
 
 on Mac:
+
 ```sh
 mount -o nfsvers=4,noacl,tcp -t nfs localhost:/ /Users/smallfz/mnt
 ```
 
 on Linux:
+
 ```sh
 mount -o nfsvers=4,minorversion=0,noacl,tcp -t nfs localhost:/ /mnt
 ```
