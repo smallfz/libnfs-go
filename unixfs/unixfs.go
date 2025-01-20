@@ -33,9 +33,11 @@ func New(workdir string) (*UnixFS, error) {
 		attributes: fs.Attributes{
 			LinkSupport:     true,
 			SymlinkSupport:  true,
-			ChownRestricted: true,  // Supported but chown is disabled by default for security reason
-			MaxName:         255,   // Common value
-			NoTrunc:         false, // Safe value
+			ChownRestricted: true,    // Supported but chown is disabled by default for security reason
+			MaxName:         255,     // Common value
+			MaxRead:         1048576, // common value
+			MaxWrite:        1048576, // common value
+			NoTrunc:         false,   // Safe value
 		},
 	}, nil
 }

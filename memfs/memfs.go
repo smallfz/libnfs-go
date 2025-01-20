@@ -137,9 +137,11 @@ func NewMemFS() *MemFS {
 		},
 		attributes: fs.Attributes{
 			LinkSupport:     true,
-			SymlinkSupport:  false, // unsopported
-			ChownRestricted: true,  // unsopported
-			MaxName:         255,   // common value
+			SymlinkSupport:  false,   // unsopported
+			ChownRestricted: true,    // unsopported
+			MaxName:         255,     // common value
+			MaxRead:         1048576, // common value
+			MaxWrite:        1048576, // common value
 			NoTrunc:         false,
 		},
 	}

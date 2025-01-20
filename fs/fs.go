@@ -84,5 +84,7 @@ type Attributes struct {
 	SymlinkSupport  bool   // id: 6
 	ChownRestricted bool   // id: 18
 	MaxName         uint32 // id: 29
+	MaxRead         uint64 // id: 30
+	MaxWrite        uint64 // id: 31
 	NoTrunc         bool   // id: 34
 }
