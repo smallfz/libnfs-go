@@ -50,7 +50,7 @@ const (
 	A_suppattr_exclcreat = 75 // (v4.1) bitmap4
 )
 
-var AttrsDefaultSet = []int{
+var attrsDefaultSet = []int{
 	// A_supported_attrs,
 	A_type,
 	// A_fh_expire_type,
@@ -78,124 +78,94 @@ var AttrsDefaultSet = []int{
 	// A_suppattr_exclcreat,
 }
 
-var (
-	AttrsSupported = []int{
-		A_supported_attrs,
-		A_type,
-		A_fh_expire_type,
-		A_change,
-		A_size,
-		A_link_support,
-		A_symlink_support,
-		A_named_attr,
-		A_fsid,
-		A_unique_handles,
-		A_lease_time,
-		A_aclsupport,
-		A_rdattr_error,
-		A_chown_restricted,
-		A_filehandle,
-		A_fileid,
-		A_maxname,
-		A_maxread,
-		A_maxwrite,
-		A_mode,
-		A_no_trunc,
-		A_numlinks,
-		A_owner,
-		A_owner_group,
-		A_rawdev,
-		A_space_used,
-		A_time_access,
-		A_time_metadata,
-		A_time_modify,
-		A_mounted_on_fileid,
-		// A_suppattr_exclcreat,
-	}
-	AttrsWritable = []int{
-		A_size,
-		// A_acl,
-		// A_archive,
-		// A_hidden,
-		// A_mimetype,
-		A_mode,
-		A_owner,
-		A_owner_group,
-		// A_system,
-		// A_time_backup,
-		// A_time_create,
-	}
-)
+var attrsSupported = []int{
+	A_supported_attrs,
+	A_type,
+	A_fh_expire_type,
+	A_change,
+	A_size,
+	A_link_support,
+	A_symlink_support,
+	A_named_attr,
+	A_fsid,
+	A_unique_handles,
+	A_lease_time,
+	A_aclsupport,
+	A_rdattr_error,
+	A_chown_restricted,
+	A_filehandle,
+	A_fileid,
+	A_maxname,
+	A_maxread,
+	A_maxwrite,
+	A_mode,
+	A_no_trunc,
+	A_numlinks,
+	A_owner,
+	A_owner_group,
+	A_rawdev,
+	A_space_used,
+	A_time_access,
+	A_time_metadata,
+	A_time_modify,
+	A_mounted_on_fileid,
+	// A_suppattr_exclcreat,
+}
+
+var attrsWritable = map[int]bool{
+	A_size: true,
+	// A_acl: true,
+	// A_archive: true,
+	// A_hidden: true,
+	// A_mimetype: true,
+	A_mode:        true,
+	A_owner:       true,
+	A_owner_group: true,
+	// A_system: true,
+	// A_time_backup: true,
+	// A_time_create: true,
+}
+
+var attrNames = map[int]string{
+	A_supported_attrs:    "supported_attrs",
+	A_type:               "type",
+	A_fh_expire_type:     "fh_expire_type",
+	A_change:             "change",
+	A_size:               "size",
+	A_link_support:       "link_support",
+	A_symlink_support:    "symlink_support",
+	A_named_attr:         "named_attr",
+	A_fsid:               "fsid",
+	A_unique_handles:     "unique_handles",
+	A_lease_time:         "lease_time",
+	A_rdattr_error:       "rdattr_error",
+	A_filehandle:         "filehandle",
+	A_fileid:             "fileid",
+	A_maxname:            "maxname",
+	A_mode:               "mode",
+	A_no_trunc:           "no_trunc",
+	A_numlinks:           "numlinks",
+	A_owner:              "owner",
+	A_owner_group:        "owner_group",
+	A_rawdev:             "rawdev",
+	A_space_used:         "space_used",
+	A_time_access:        "time_access",
+	A_time_metadata:      "time_metadata",
+	A_time_modify:        "time_modify",
+	A_mounted_on_fileid:  "mounted_on_fileid",
+	A_suppattr_exclcreat: "suppattr_exclcreat",
+}
 
 func GetAttrNameById(id int) (string, bool) {
-	switch id {
-	case A_supported_attrs:
-		return "supported_attrs", true
-	case A_type:
-		return "type", true
-	case A_fh_expire_type:
-		return "fh_expire_type", true
-	case A_change:
-		return "change", true
-	case A_size:
-		return "size", true
-	case A_link_support:
-		return "link_support", true
-	case A_symlink_support:
-		return "symlink_support", true
-	case A_named_attr:
-		return "named_attr", true
-	case A_fsid:
-		return "fsid", true
-	case A_unique_handles:
-		return "unique_handles", true
-	case A_lease_time:
-		return "lease_time", true
-	case A_rdattr_error:
-		return "rdattr_error", true
-	case A_filehandle:
-		return "filehandle", true
-	case A_fileid:
-		return "fileid", true
-	case A_maxname:
-		return "maxname", true
-	case A_maxread:
-		return "maxread", true
-	case A_maxwrite:
-		return "maxwrite", true
-	case A_mode:
-		return "mode", true
-	case A_no_trunc:
-		return "no_trunc", true
-	case A_numlinks:
-		return "numlinks", true
-	case A_owner:
-		return "owner", true
-	case A_owner_group:
-		return "owner_group", true
-	case A_rawdev:
-		return "rawdev", true
-	case A_space_used:
-		return "space_used", true
-	case A_time_access:
-		return "time_access", true
-	case A_time_metadata:
-		return "time_metadata", true
-	case A_time_modify:
-		return "time_modify", true
-	case A_mounted_on_fileid:
-		return "mounted_on_fileid", true
-	case A_suppattr_exclcreat:
-		return "suppattr_exclcreat", true
+	if name, found := attrNames[id]; found {
+		return name, found
 	}
 	return fmt.Sprintf("%d", id), false
 }
 
 func isAttrWritable(id int) bool {
-	for _, a := range AttrsWritable {
-		if a == id {
-			return true
-		}
+	if writable, found := attrsWritable[id]; found {
+		return writable
 	}
 	return false
 }
@@ -203,7 +173,7 @@ func isAttrWritable(id int) bool {
 // getAttrsMaxBytesSize: estimate the byte size of a FAttr4.
 func getAttrsMaxBytesSize(req map[int]bool) uint32 {
 	idxSupport := map[int]bool{}
-	for _, a := range AttrsSupported {
+	for _, a := range attrsSupported {
 		idxSupport[a] = true
 	}
 
@@ -278,14 +248,14 @@ func newFAttr4(mask []uint32, valsb64 string) *nfs.FAttr4 {
 
 func fileInfoToAttrs(vfs fs.FS, pathName string, fi fs.FileInfo, attrsRequest map[int]bool) *nfs.FAttr4 {
 	idxSupport := map[int]bool{}
-	for _, a := range AttrsSupported {
+	for _, a := range attrsSupported {
 		idxSupport[a] = true
 	}
 
 	attrsFS := vfs.Attributes()
 
 	idxDefault := map[int]bool{}
-	for _, a := range AttrsDefaultSet {
+	for _, a := range attrsDefaultSet {
 		idxDefault[a] = true
 	}
 
