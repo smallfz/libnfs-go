@@ -34,6 +34,8 @@ const (
 	A_filehandle         = 19 // nfs_fh4, opaque<>
 	A_fileid             = 20 // uint64
 	A_maxname            = 29 // uint32
+	A_maxread            = 30 // uint32
+	A_maxwrite           = 31 // uint32
 	A_mode               = 33 // (v4.1) uint32
 	A_no_trunc           = 34 // bool
 	A_numlinks           = 35 // uint32
@@ -95,6 +97,8 @@ var (
 		A_filehandle,
 		A_fileid,
 		A_maxname,
+		A_maxread,
+		A_maxwrite,
 		A_mode,
 		A_no_trunc,
 		A_numlinks,
@@ -155,6 +159,10 @@ func GetAttrNameById(id int) (string, bool) {
 		return "fileid", true
 	case A_maxname:
 		return "maxname", true
+	case A_maxread:
+		return "maxread", true
+	case A_maxwrite:
+		return "maxwrite", true
 	case A_mode:
 		return "mode", true
 	case A_no_trunc:
@@ -223,6 +231,8 @@ func getAttrsMaxBytesSize(req map[int]bool) uint32 {
 		A_filehandle:        128 + 4, // max value
 		A_fileid:            8,
 		A_maxname:           4,
+		A_maxread:           8,
+		A_maxwrite:          8,
 		A_mode:              4,
 		A_no_trunc:          4,
 		A_numlinks:          4,
@@ -414,6 +424,12 @@ func fileInfoToAttrs(vfs fs.FS, pathName string, fi fs.FileInfo, attrsRequest ma
 
 		case A_maxname:
 			writeAny(a, attrsFS.MaxName, 4)
+
+		case A_maxread:
+			writeAny(a, attrsFS.MaxRead, 8)
+
+		case A_maxwrite:
+			writeAny(a, attrsFS.MaxWrite, 8)
 
 		case A_mode:
 			mask := (uint32(1) << 9) - 1

@@ -11,7 +11,7 @@ import (
 )
 
 func rename(x nfs.RPCContext, args *nfs.RENAME4args) (*nfs.RENAME4res, error) {
-	log.Debugf("remame obj: %s -> %s", strconv.Quote(args.OldName), strconv.Quote(args.NewName))
+	log.Infof("remame obj: %s -> %s", strconv.Quote(args.OldName), strconv.Quote(args.NewName))
 
 	stat := x.Stat()
 	vfs := x.GetFS()
