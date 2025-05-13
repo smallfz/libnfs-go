@@ -1,19 +1,16 @@
 
-FROM --platform=linux/amd64 centos:7
+FROM ubuntu:24.04
 
 RUN [ -d /mnt ] || mkdir -p /mnt
 
-RUN yum -y update
-RUN yum install -y nfs-common rpcbind
-RUN yum install -y python
-# RUN yum install -y iproute2
-# RUN yum install -y iptables
-# RUN yum install -y iputils-ping
-RUN yum install -y nfs-utils
+RUN apt update
+RUN apt install -y nfs-common rpcbind
+RUN apt install -y nfs-kernel-server
+# RUN apt install -y nfs-utils
 
-RUN yum install -y python3
-RUN yum install -y krb5-devel python3-devel swig python3-gssapi python3-ply
-RUN yum install -y unzip
+RUN apt install -y python3
+RUN apt install -y libkrb5-dev python3-dev swig python3-gssapi python3-ply
+RUN apt install -y unzip
 RUN pip3 install ply
 
 ADD NFStest-1.0.10.tar.gz /opt
