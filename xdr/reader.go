@@ -5,9 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
-
-	// "libnfs-go/log"
 	"math"
 	"reflect"
 )
@@ -60,11 +57,11 @@ import (
 // like var-length array with max size 1.
 
 type Reader struct {
-	base *io.LimitedReader
+	r io.Reader
 }
 
 func NewReader(base io.Reader) *Reader {
-	return &Reader{base: &io.LimitedReader{R: base, N: 0}}
+	return &Reader{r: base}
 }
 
 func (r *Reader) Debugf(t string, args ...interface{}) {
@@ -72,19 +69,19 @@ func (r *Reader) Debugf(t string, args ...interface{}) {
 }
 
 func (r *Reader) ReadBytes(size int) ([]byte, error) {
-	r.base.N = int64(size)
-	dat, err := ioutil.ReadAll(r.base)
-	if err != nil {
+	buf := make([]byte, size)
+	if _, err := io.ReadFull(r.r, buf); err != nil {
 		return nil, err
-	} else if dat == nil || len(dat) < size {
-		return dat, io.EOF
 	}
-	return dat, nil
+	return buf, nil
 }
 
-func (r *Reader) Read(buff []byte) (int, error) {
-	r.base.N = int64(len(buff))
-	return r.base.Read(buff)
+func (r *Reader) Read(buf []byte) (int, error) {
+	if n, err := io.ReadFull(r.r, buf); err != nil {
+		return 0, err
+	} else {
+		return n, nil
+	}
 }
 
 func (r *Reader) ReadUint32() (uint32, error) {
