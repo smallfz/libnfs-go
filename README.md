@@ -15,6 +15,10 @@ Currently this repo doesn't include any COS wrapper in it.
 
 To give it a try:
 
+```go get github.com/smallfz/libnfs-go@main```
+
+Demo memory fs:
+
 ```go
 package main
 
