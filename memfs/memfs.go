@@ -22,6 +22,8 @@ type memFsNode struct {
 	id       uint64
 	name     string
 	isDir    bool
+	isLink   bool   // true if this is a symlink
+	target   string // symlink target path
 	nodeId   uint64 // storage data-node id
 	perm     os.FileMode
 	aTime    time.Time
@@ -137,8 +139,8 @@ func NewMemFS() *MemFS {
 		},
 		attributes: fs.Attributes{
 			LinkSupport:     true,
-			SymlinkSupport:  false,   // unsopported
-			ChownRestricted: true,    // unsopported
+			SymlinkSupport:  true,    // symlinks supported
+			ChownRestricted: true,    // unsupported
 			MaxName:         255,     // common value
 			MaxRead:         1048576, // common value
 			MaxWrite:        1048576, // common value
@@ -150,7 +152,10 @@ func NewMemFS() *MemFS {
 func (s *MemFS) nextId() uint64 {
 	s.lck.Lock()
 	defer s.lck.Unlock()
+	return s.nextIdLocked()
+}
 
+func (s *MemFS) nextIdLocked() uint64 {
 	if s.fileId < 1000 {
 		s.fileId = 1000
 	}
@@ -167,11 +172,18 @@ func (s *MemFS) getFileInfo(n *memFsNode) *fileInfo {
 	if n.isDir && n.children != nil {
 		nlinks += len(n.children)
 	}
+
+	// For symlinks, size is the length of the target path
+	size := n.size
+	if n.isLink {
+		size = int64(len(n.target))
+	}
+
 	return &fileInfo{
 		id:       n.id,
 		name:     path.Base(n.name),
 		perm:     n.perm,
-		size:     n.size,
+		size:     size,
 		modTime:  n.mTime,
 		aTime:    n.aTime,
 		cTime:    n.cTime,
@@ -486,14 +498,68 @@ func (s *MemFS) Link(oldName, newName string) error {
 	return nil
 }
 
-func (s *MemFS) Symlink(oldName, newName string) error {
-	log.Warn("TODO: memfs.Symlink not implemented")
+func (s *MemFS) Symlink(target, linkName string) error {
+	s.lck.Lock()
+	defer s.lck.Unlock()
+
+	// Check if linkName already exists
+	if _, found := s.getNode(linkName); found {
+		return os.ErrExist
+	}
+
+	// Get parent directory
+	parts := fs.BreakAll(linkName)
+	if len(parts) == 0 {
+		return os.ErrInvalid
+	}
+
+	var parent *memFsNode
+	if len(parts) == 1 {
+		parent = s.root
+	} else {
+		var found bool
+		parent, found = s.root.findChild(parts[:len(parts)-1])
+		if !found {
+			return os.ErrNotExist
+		}
+	}
+
+	if !parent.isDir {
+		return os.ErrInvalid
+	}
+
+	// Create symlink node
+	now := time.Now()
+	linkNode := &memFsNode{
+		id:     s.nextIdLocked(),
+		name:   parts[len(parts)-1],
+		isDir:  false,
+		isLink: true,
+		target: target,
+		perm:   os.ModeSymlink | 0777,
+		aTime:  now,
+		cTime:  now,
+		mTime:  now,
+	}
+
+	parent.children = append(parent.children, linkNode)
 	return nil
 }
 
 func (s *MemFS) Readlink(name string) (string, error) {
-	log.Warn("TODO: memfs.Readlink not implemented")
-	return name, nil
+	s.lck.RLock()
+	defer s.lck.RUnlock()
+
+	node, found := s.getNode(name)
+	if !found {
+		return "", os.ErrNotExist
+	}
+
+	if !node.isLink {
+		return "", os.ErrInvalid
+	}
+
+	return node.target, nil
 }
 
 func (s *MemFS) Attributes() *fs.Attributes {
