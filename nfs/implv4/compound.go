@@ -269,6 +269,7 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 	rsOpList := []uint32{}
 	rsList := []interface{}{}
 
+procLoop:
 	for i := uint32(0); i < opsCnt; i++ {
 		opnum4 := uint32(0)
 		if size, err := r.ReadAs(&opnum4); err != nil {
@@ -749,8 +750,25 @@ func Compound(h *nfs.RPCMsgCall, ctx nfs.RPCContext) (int, error) {
 
 		default:
 			log.Warnf("op not handled: %d.", opnum4)
-			w.WriteUint32(nfs.NFS4ERR_OP_ILLEGAL)
-			return sizeConsumed, nil
+
+			// rfc7530, 15.2: an operation that is part of the protocol but not
+			// implemented fails with NFS4ERR_NOTSUPP. NFS4ERR_OP_ILLEGAL is
+			// only for an opnum outside the protocol, and is reported against
+			// OP4_ILLEGAL rather than against the opnum received.
+			resOp, status := opnum4, nfs.NFS4ERR_NOTSUPP
+			if opnum4 < nfs.OP4_ACCESS || opnum4 > nfs.OP4_RELEASE_LOCKOWNER {
+				resOp, status = nfs.OP4_ILLEGAL, nfs.NFS4ERR_OP_ILLEGAL
+			}
+
+			rsOpList = append(rsOpList, resOp)
+			rsStatusList = append(rsStatusList, status)
+			rsList = append(rsList, &nfs.ResGenericRaw{Status: status})
+
+			// The args of an op we can't decode are still in the stream, so no
+			// later op of this compound can be parsed. Stop here: rfc7530, 15.2
+			// ends the resarray at the operation that failed. Results already
+			// collected are still returned.
+			break procLoop
 		}
 	}
 
